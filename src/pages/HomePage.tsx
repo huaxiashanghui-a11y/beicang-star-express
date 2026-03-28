@@ -8,12 +8,21 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useApp } from '@/context/AppContext'
 import { products, categories, banners } from '@/data/mockData'
 import ProductCard from '@/components/ProductCard'
+import { HomePageSkeleton } from '@/components/Skeleton'
+import Carousel from '@/components/Carousel'
 
 export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const { state } = useApp()
+
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => setLoading(false), 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -30,6 +39,10 @@ export default function HomePage() {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
     }
+  }
+
+  if (loading) {
+    return <HomePageSkeleton />
   }
 
   return (
@@ -82,7 +95,7 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
-            
+
             {/* Banner Dots */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
               {banners.map((_, index) => (

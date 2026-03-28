@@ -30,8 +30,9 @@ export default function TabBar() {
               key={tab.path}
               to={tab.path}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full transition-colors relative',
-                isActive ? 'text-primary' : isSpecial ? 'text-white' : 'text-muted-foreground'
+                'flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 relative touch-punch',
+                isActive ? 'text-primary' : isSpecial ? 'text-white' : 'text-muted-foreground',
+                'active:scale-90'
               )}
             >
               {isSpecial ? (
