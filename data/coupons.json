@@ -1,0 +1,58 @@
+[
+  {
+    "id": "coupon-1",
+    "name": "新人专享券",
+    "description": "新用户首单满100减20",
+    "discountType": "fixed",
+    "discountValue": 2000,
+    "minPurchase": 10000,
+    "validFrom": "2024-01-01",
+    "validTo": "2024-12-31",
+    "category": null
+  },
+  {
+    "id": "coupon-2",
+    "name": "数码专属券",
+    "description": "数码产品满500减50",
+    "discountType": "fixed",
+    "discountValue": 5000,
+    "minPurchase": 50000,
+    "validFrom": "2024-01-01",
+    "validTo": "2024-12-31",
+    "category": "电子产品"
+  },
+  {
+    "id": "coupon-3",
+    "name": "限时9折券",
+    "description": "指定商品9折优惠",
+    "discountType": "percentage",
+    "discountValue": 10,
+    "minPurchase": 0,
+    "maxDiscount": 10000,
+    "validFrom": "2024-01-01",
+    "validTo": "2024-12-31",
+    "category": null
+  },
+  {
+    "id": "coupon-4",
+    "name": "美妆满减券",
+    "description": "美妆产品满200减30",
+    "discountType": "fixed",
+    "discountValue": 3000,
+    "minPurchase": 20000,
+    "validFrom": "2024-01-01",
+    "validTo": "2024-12-31",
+    "category": "美妆"
+  },
+  {
+    "id": "coupon-5",
+    "name": "家居专属券",
+    "description": "家居用品满300减40",
+    "discountType": "fixed",
+    "discountValue": 4000,
+    "minPurchase": 30000,
+    "validFrom": "2024-01-01",
+    "validTo": "2024-12-31",
+    "category": "家居"
+  }
+]

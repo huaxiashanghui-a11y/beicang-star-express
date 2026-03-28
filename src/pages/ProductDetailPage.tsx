@@ -1,0 +1,262 @@
+import { useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { Heart, Share2, Star, Minus, Plus, ShoppingCart, ChevronLeft, ChevronRight, Shield, Truck, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { products } from '@/data/mockData'
+import { useApp } from '@/context/AppContext'
+import ReviewSection from '@/components/ReviewSection'
+
+export default function ProductDetailPage() {
+  const { productId } = useParams()
+  const product = products.find(p => p.id === productId)
+  const { dispatch } = useApp()
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [quantity, setQuantity] = useState(1)
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>({})
+  const [showFullDesc, setShowFullDesc] = useState(false)
+
+  if (!product) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="text-6xl mb-4">😢</div>
+        <h2 className="text-xl font-bold mb-2">商品不存在</h2>
+        <Link to="/" className="text-primary hover:underline">
+          返回首页
+        </Link>
+      </div>
+    )
+  }
+
+  const handleAddToCart = () => {
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: { product, quantity, specifications: selectedSpecs },
+    })
+  }
+
+  const handleBuyNow = () => {
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: { product, quantity, specifications: selectedSpecs },
+    })
+    window.location.href = '/checkout'
+  }
+
+  const formatPrice = (price: number) => (price / 100).toFixed(2)
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Image Gallery */}
+      <div className="relative">
+        <div className="aspect-square bg-muted">
+          <img
+            src={product.images[selectedImage]}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        
+        {/* Image Navigation */}
+        {product.images.length > 1 && (
+          <>
+            <button
+              onClick={() => setSelectedImage((prev) => (prev - 1 + product.images.length) % product.images.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow-lg"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() => setSelectedImage((prev) => (prev + 1) % product.images.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow-lg"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
+        )}
+
+        {/* Image Dots */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {product.images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setSelectedImage(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === selectedImage ? 'w-6 bg-primary' : 'bg-white/60'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Badges */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2">
+          {product.isHot && <Badge className="bg-primary">热门</Badge>}
+          {product.isNew && <Badge className="bg-secondary">新品</Badge>}
+          {product.discount && (
+            <Badge variant="destructive">-{product.discount}%</Badge>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">
+            <Share2 className="w-5 h-5" />
+          </button>
+          <button className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">
+            <Heart className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Product Info */}
+      <div className="px-4 py-4">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h1 className="text-xl font-bold leading-tight">{product.name}</h1>
+            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1 text-warning">
+                <Star className="w-4 h-4 fill-warning" />
+                {product.rating}
+              </span>
+              <span>|</span>
+              <span>{product.reviewCount} 条评价</span>
+              <span>|</span>
+              <span>{product.sales} 已售</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Price */}
+        <div className="flex items-baseline gap-3 mb-4">
+          <span className="text-3xl font-bold text-primary">${formatPrice(product.price)}</span>
+          {product.discount && (
+            <span className="text-lg text-muted-foreground line-through">
+              ${formatPrice(product.originalPrice)}
+            </span>
+          )}
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {product.tags.map((tag) => (
+            <Badge key={tag} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+
+        {/* Seller Info */}
+        <Link to={`/seller/${product.seller.id}`} className="flex items-center gap-3 p-3 bg-card rounded-xl mb-4">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+            {product.seller.avatar}
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold">{product.seller.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              评分 {product.seller.rating} | {product.seller.products} 件商品
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </Link>
+      </div>
+
+      {/* Specifications */}
+      <div className="px-4 py-4 border-t border-border">
+        <h2 className="font-semibold mb-3">商品规格</h2>
+        <div className="space-y-3">
+          {product.specifications.map((spec) => (
+            <div key={spec.name} className="flex items-center justify-between">
+              <span className="text-muted-foreground">{spec.name}</span>
+              <span>{spec.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="px-4 py-4 border-t border-border">
+        <h2 className="font-semibold mb-3">商品详情</h2>
+        <p className={`text-muted-foreground leading-relaxed ${!showFullDesc && 'line-clamp-3'}`}>
+          {product.description}
+        </p>
+        {product.description.length > 100 && (
+          <button
+            onClick={() => setShowFullDesc(!showFullDesc)}
+            className="text-primary text-sm mt-2"
+          >
+            {showFullDesc ? '收起' : '展开全部'}
+          </button>
+        )}
+      </div>
+
+      {/* Reviews */}
+      <div className="px-4 py-4 border-t border-border">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">商品评价</h2>
+          <Link to={`/product/${productId}/reviews`} className="text-sm text-primary">
+            查看全部
+          </Link>
+        </div>
+        <ReviewSection productId={productId!} />
+      </div>
+
+      {/* Services */}
+      <div className="px-4 py-4 border-t border-border">
+        <h2 className="font-semibold mb-3">服务保障</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: Shield, label: '正品保障' },
+            { icon: Truck, label: '全球包邮' },
+            { icon: RotateCcw, label: '7天退换' },
+          ].map((service, index) => (
+            <div key={index} className="flex flex-col items-center text-center">
+              <service.icon className="w-6 h-6 text-primary mb-1" />
+              <span className="text-xs text-muted-foreground">{service.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-bottom z-50">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="flex items-center gap-1 border border-input rounded-xl">
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="w-12 text-center font-semibold">{quantity}</span>
+            <button
+              onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+              className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            className="flex-1 h-12 rounded-xl"
+            onClick={handleAddToCart}
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            加入购物车
+          </Button>
+          
+          <Button
+            variant="premium"
+            size="lg"
+            className="flex-1 h-12 rounded-xl"
+            onClick={handleBuyNow}
+          >
+            立即购买
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}

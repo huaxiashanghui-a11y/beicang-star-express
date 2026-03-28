@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 14% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 14% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 14% 20%;
+    
+    /* Primary - Vibrant Orange */
+    --primary: 18 100% 56%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 18 100% 65%;
+    --primary-dark: 18 100% 46%;
+    
+    /* Secondary - Ocean Blue */
+    --secondary: 210 75% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 210 75% 70%;
+    
+    /* Accent */
+    --accent: 210 40% 96%;
+    --accent-foreground: 220 14% 20%;
+    --accent-light: 210 40% 98%;
+    
+    --muted: 210 40% 96%;
+    --muted-foreground: 220 9% 46%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Success - Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 18 100% 56%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 0 0% 98%;
+    --card: 220 20% 14%;
+    --card-foreground: 0 0% 98%;
+    --popover: 220 20% 14%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 18 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 18 100% 70%;
+    --primary-dark: 18 100% 50%;
+    
+    --secondary: 210 75% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 210 75% 75%;
+    
+    --accent: 220 15% 20%;
+    --accent-foreground: 0 0% 98%;
+    --accent-light: 220 15% 25%;
+    
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 9% 64%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 0%;
+    
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 18 100% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Gradient backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--secondary-light)) 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+}
+
+.gradient-surface {
+  background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dark .glass {
+  background: rgba(30, 30, 30, 0.8);
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+}
+
+.glow-secondary {
+  box-shadow: 0 0 20px hsl(var(--secondary) / 0.4);
+}
+
+/* Text gradient */
+.text-gradient {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted-foreground) / 0.2) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Safe area for mobile */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch target minimum */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
