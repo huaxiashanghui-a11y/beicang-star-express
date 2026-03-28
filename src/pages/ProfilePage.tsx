@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Settings, MapPin, Ticket, Clock, Heart, Bell, ChevronRight, LogOut, Shield, HelpCircle, Info } from 'lucide-react'
+import { Settings, MapPin, Ticket, Clock, Heart, Bell, ChevronRight, LogOut, Shield, HelpCircle, Info, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,10 +35,15 @@ export default function ProfilePage() {
     window.location.href = '/login'
   }
 
+  // Generate random user ID if not exists
+  const userId = user?.id || `vir-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
+  const balance = user?.balance || 0
+  const points = user?.points || 0
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Profile Header */}
-      <div className="gradient-hero px-4 pt-8 pb-12 text-white">
+      {/* Profile Header - Red Theme */}
+      <div className="bg-gradient-to-r from-[#FF3B59] to-[#FF6B81] px-4 pt-8 pb-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">个人中心</h1>
           <Link to="/settings">
@@ -48,45 +53,50 @@ export default function ProfilePage() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-3xl font-bold">{user?.name?.[0] || 'U'}</span>
-            )}
+        {/* User Info Card - Three Columns */}
+        <div className="flex items-stretch gap-2">
+          {/* Balance Section */}
+          <div className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl">
+            <span className="text-xs opacity-80 mb-1">余额</span>
+            <span className="text-2xl font-bold mb-2">{balance.toFixed(2)}</span>
+            <button className="px-4 py-1.5 rounded-full border border-white/50 text-xs hover:bg-white/20 transition-colors">
+              充值
+            </button>
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold mb-1">{user?.name || 'Guest'}</h2>
-            <p className="opacity-80 text-sm">{user?.email || '未登录'}</p>
-            <p className="opacity-60 text-xs mt-1">{user?.phone || ''}</p>
+
+          {/* Avatar & ID Section */}
+          <Link
+            to="/profile/edit"
+            className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl hover:bg-white/20 transition-colors"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-2 shadow-lg">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              ) : (
+                <User className="w-8 h-8 text-[#FF3B59]" />
+              )}
+            </div>
+            <span className="text-xs opacity-60 mb-1">点击修改</span>
+            <span className="text-xs font-medium opacity-90">{userId}</span>
+          </Link>
+
+          {/* Points Section */}
+          <div className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl">
+            <span className="text-xs opacity-80 mb-1">积分</span>
+            <span className="text-2xl font-bold mb-2">{points.toFixed(2)}</span>
+            <button className="px-4 py-1.5 rounded-full border border-white/50 text-xs hover:bg-white/20 transition-colors">
+              兑换
+            </button>
           </div>
-          {!state.isAuthenticated ? (
-            <Link to="/login">
-              <Button variant="secondary" size="sm" className="rounded-lg">
-                登录
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20 rounded-lg"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4 mr-1" />
-              退出
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Orders Section */}
-      <div className="mx-4 -mt-6">
+      <div className="mx-4 -mt-4">
         <Card className="shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
