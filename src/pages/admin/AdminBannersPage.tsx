@@ -1,8 +1,23 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Image, Eye, GripVertical, Upload, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Image, Eye, GripVertical, X, Check, AlertTriangle, Upload } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const mockBanners = [
+interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  link: string;
+  linkType: '活动页' | '分类页' | '商品页' | '个人中心';
+  position: number;
+  status: '显示' | '隐藏' | '草稿';
+  startTime: string;
+  endTime: string;
+  clicks: number;
+  gradient: string;
+}
+
+const initialBanners: Banner[] = [
   {
     id: '1',
     title: '春季新品大促',
@@ -75,10 +90,54 @@ const mockBanners = [
   },
 ];
 
+const gradients = [
+  'from-orange-500 to-red-500',
+  'from-blue-500 to-purple-500',
+  'from-pink-500 to-rose-500',
+  'from-green-500 to-teal-500',
+  'from-yellow-500 to-orange-500',
+  'from-indigo-500 to-blue-500',
+  'from-red-500 to-pink-500',
+];
+
 export default function AdminBannersPage() {
+  const [banners, setBanners] = useState<Banner[]>(initialBanners);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('全部');
-  const [banners, setBanners] = useState(mockBanners);
+
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
+  const [editingBanner, setEditingBanner] = useState<Partial<Banner>>({});
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Form state
+  const [formData, setFormData] = useState<Partial<Banner>>({
+    title: '',
+    subtitle: '',
+    image: '',
+    link: '',
+    linkType: '活动页',
+    position: 1,
+    status: '草稿',
+    startTime: new Date().toISOString().split('T')[0],
+    endTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    gradient: 'from-orange-500 to-red-500',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
 
   const filteredBanners = banners.filter(banner => {
     const matchesSearch = banner.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -95,15 +154,116 @@ export default function AdminBannersPage() {
     '草稿': 'bg-yellow-100 text-yellow-700',
   };
 
+  const handleAdd = () => {
+    setFormData({
+      title: '',
+      subtitle: '',
+      image: '',
+      link: '',
+      linkType: '活动页',
+      position: banners.length + 1,
+      status: '草稿',
+      startTime: new Date().toISOString().split('T')[0],
+      endTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      gradient: 'from-orange-500 to-red-500',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleEdit = (banner: Banner) => {
+    setEditingBanner({ ...banner });
+    setShowEditModal(true);
+  };
+
+  const handleView = (banner: Banner) => {
+    setSelectedBanner(banner);
+    setShowDetailModal(true);
+  };
+
+  const handleDelete = (banner: Banner) => {
+    setSelectedBanner(banner);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedBanner) {
+      setBanners(banners.filter(b => b.id !== selectedBanner.id));
+      showToast(`轮播图"${selectedBanner.title}"已删除`);
+      setShowDeleteModal(false);
+      setSelectedBanner(null);
+    }
+  };
+
+  const handleToggleStatus = (banner: Banner) => {
+    const newStatus = banner.status === '显示' ? '隐藏' : banner.status === '隐藏' ? '显示' : '草稿';
+    setBanners(
+      banners.map(b =>
+        b.id === banner.id ? { ...b, status: newStatus as Banner['status'] } : b
+      )
+    );
+    showToast(`轮播图"${banner.title}"已${newStatus === '显示' ? '显示' : newStatus === '隐藏' ? '隐藏' : '设为草稿'}`);
+  };
+
+  const handleSaveAdd = () => {
+    if (!formData.title || !formData.image) {
+      showToast('请填写轮播图标题和图片', 'error');
+      return;
+    }
+    const newBanner: Banner = {
+      id: Date.now().toString(),
+      title: formData.title || '',
+      subtitle: formData.subtitle || '',
+      image: formData.image || '',
+      link: formData.link || '/',
+      linkType: (formData.linkType as Banner['linkType']) || '活动页',
+      position: formData.position || banners.length + 1,
+      status: (formData.status as Banner['status']) || '草稿',
+      startTime: formData.startTime || '',
+      endTime: formData.endTime || '',
+      clicks: 0,
+      gradient: formData.gradient || 'from-orange-500 to-red-500',
+    };
+    setBanners([...banners, newBanner]);
+    showToast(`轮播图"${newBanner.title}"创建成功`);
+    setShowAddModal(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingBanner.id || !editingBanner.title) {
+      showToast('请填写完整信息', 'error');
+      return;
+    }
+    setBanners(
+      banners.map(b =>
+        b.id === editingBanner.id ? { ...b, ...editingBanner } as Banner : b
+      )
+    );
+    showToast(`轮播图"${editingBanner.title}"更新成功`);
+    setShowEditModal(false);
+    setEditingBanner({});
+  };
+
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+            toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}
+        >
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">轮播管理</h2>
           <p className="text-gray-500 text-sm mt-1">管理首页轮播图和广告位</p>
         </div>
-        <Button className="bg-gradient-to-r from-orange-500 to-blue-500">
+        <Button onClick={handleAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
           <Plus className="w-4 h-4 mr-2" />
           添加轮播图
         </Button>
@@ -192,7 +352,7 @@ export default function AdminBannersPage() {
               </div>
               <div className="absolute top-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
                 <GripVertical className="w-3 h-3" />
-                拖拽排序
+                排序: {banner.position}
               </div>
             </div>
 
@@ -201,13 +361,16 @@ export default function AdminBannersPage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h4 className="font-semibold text-gray-800">{banner.title}</h4>
-                  <p className="text-sm text-gray-500">排序: 第{banner.position}位</p>
+                  <p className="text-sm text-gray-500">链接: {banner.linkType}</p>
                 </div>
                 <div className="flex gap-1">
-                  <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <button onClick={() => handleView(banner)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleEdit(banner)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                  <button onClick={() => handleDelete(banner)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -229,7 +392,7 @@ export default function AdminBannersPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleView(banner)}>
                   <Eye className="w-4 h-4 mr-1" />
                   预览
                 </Button>
@@ -237,8 +400,9 @@ export default function AdminBannersPage() {
                   variant="outline"
                   size="sm"
                   className={`flex-1 ${banner.status === '显示' ? 'text-red-600' : 'text-green-600'}`}
+                  onClick={() => handleToggleStatus(banner)}
                 >
-                  {banner.status === '显示' ? '隐藏' : '显示'}
+                  {banner.status === '显示' ? '隐藏' : banner.status === '隐藏' ? '显示' : '发布'}
                 </Button>
               </div>
             </div>
@@ -246,14 +410,359 @@ export default function AdminBannersPage() {
         ))}
       </div>
 
-      {/* Add Banner Card */}
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-orange-500 hover:bg-orange-50 transition-colors cursor-pointer">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Plus className="w-8 h-8 text-gray-400" />
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">添加轮播图</h3>
+                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">轮播图标题</label>
+                <input
+                  type="text"
+                  value={formData.title || ''}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="例如：春季新品大促"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">副标题</label>
+                <input
+                  type="text"
+                  value={formData.subtitle || ''}
+                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                  placeholder="例如：全场低至5折起"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">图片URL</label>
+                <input
+                  type="text"
+                  value={formData.image || ''}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                {formData.image && (
+                  <div className="mt-2 rounded-lg overflow-hidden">
+                    <img src={formData.image} alt="预览" className="w-full h-32 object-cover" />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">链接类型</label>
+                  <select
+                    value={formData.linkType || '活动页'}
+                    onChange={(e) => setFormData({ ...formData, linkType: e.target.value as Banner['linkType'] })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="活动页">活动页</option>
+                    <option value="分类页">分类页</option>
+                    <option value="商品页">商品页</option>
+                    <option value="个人中心">个人中心</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">排序位置</label>
+                  <input
+                    type="number"
+                    value={formData.position || 1}
+                    onChange={(e) => setFormData({ ...formData, position: Number(e.target.value) })}
+                    min={1}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">背景渐变</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {gradients.map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setFormData({ ...formData, gradient: g })}
+                      className={`h-8 rounded-lg bg-gradient-to-r ${g} ${
+                        formData.gradient === g ? 'ring-2 ring-orange-500' : ''
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">开始时间</label>
+                  <input
+                    type="date"
+                    value={formData.startTime || ''}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">结束时间</label>
+                  <input
+                    type="date"
+                    value={formData.endTime || ''}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                <select
+                  value={formData.status || '草稿'}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Banner['status'] })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="草稿">草稿</option>
+                  <option value="显示">显示</option>
+                  <option value="隐藏">隐藏</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                添加轮播图
+              </Button>
+            </div>
+          </div>
         </div>
-        <h3 className="font-semibold text-gray-800 mb-2">添加新轮播图</h3>
-        <p className="text-sm text-gray-500">点击上传图片，建议尺寸 1200x400</p>
-      </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingBanner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">编辑轮播图</h3>
+                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">轮播图标题</label>
+                <input
+                  type="text"
+                  value={editingBanner.title || ''}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, title: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">副标题</label>
+                <input
+                  type="text"
+                  value={editingBanner.subtitle || ''}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, subtitle: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">图片URL</label>
+                <input
+                  type="text"
+                  value={editingBanner.image || ''}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, image: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                {editingBanner.image && (
+                  <div className="mt-2 rounded-lg overflow-hidden">
+                    <img src={editingBanner.image} alt="预览" className="w-full h-32 object-cover" />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">链接类型</label>
+                  <select
+                    value={editingBanner.linkType || '活动页'}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, linkType: e.target.value as Banner['linkType'] })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="活动页">活动页</option>
+                    <option value="分类页">分类页</option>
+                    <option value="商品页">商品页</option>
+                    <option value="个人中心">个人中心</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">排序位置</label>
+                  <input
+                    type="number"
+                    value={editingBanner.position || 1}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, position: Number(e.target.value) })}
+                    min={1}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">背景渐变</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {gradients.map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setEditingBanner({ ...editingBanner, gradient: g })}
+                      className={`h-8 rounded-lg bg-gradient-to-r ${g} ${
+                        editingBanner.gradient === g ? 'ring-2 ring-orange-500' : ''
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">开始时间</label>
+                  <input
+                    type="date"
+                    value={editingBanner.startTime || ''}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, startTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">结束时间</label>
+                  <input
+                    type="date"
+                    value={editingBanner.endTime || ''}
+                    onChange={(e) => setEditingBanner({ ...editingBanner, endTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                <select
+                  value={editingBanner.status || '草稿'}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, status: e.target.value as Banner['status'] })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="草稿">草稿</option>
+                  <option value="显示">显示</option>
+                  <option value="隐藏">隐藏</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                保存修改
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedBanner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">轮播图详情</h3>
+                <button onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className={`h-48 rounded-xl relative overflow-hidden mb-4`}>
+                <img
+                  src={selectedBanner.image}
+                  alt={selectedBanner.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className={`absolute inset-0 bg-gradient-to-br ${selectedBanner.gradient} opacity-60`}></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <h3 className="text-2xl font-bold mb-1">{selectedBanner.title}</h3>
+                    <p className="opacity-90">{selectedBanner.subtitle}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">轮播图ID</span>
+                  <span className="font-medium">{selectedBanner.id}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">链接类型</span>
+                  <span className="font-medium">{selectedBanner.linkType}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">排序位置</span>
+                  <span className="font-medium">第{selectedBanner.position}位</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">状态</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${statusConfig[selectedBanner.status as keyof typeof statusConfig]}`}>
+                    {selectedBanner.status}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">投放时间</span>
+                  <span className="font-medium">{selectedBanner.startTime} 至 {selectedBanner.endTime}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-500">点击量</span>
+                  <span className="font-medium text-orange-600">{selectedBanner.clicks.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDetailModal(false)}>
+                关闭
+              </Button>
+              <Button onClick={() => { setShowDetailModal(false); handleEdit(selectedBanner); }} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                编辑轮播图
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedBanner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">确认删除</h3>
+              <p className="text-gray-600">
+                确定要删除轮播图 "{selectedBanner.title}" 吗？此操作无法撤销。
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                取消
+              </Button>
+              <Button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white">
+                确认删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

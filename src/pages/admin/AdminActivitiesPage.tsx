@@ -1,8 +1,32 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Zap, Gift, Percent, Clock, Users, TrendingUp, Play, Pause, Copy } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Zap, Gift, Percent, Clock, Users, TrendingUp, Play, Pause, X, Check, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const mockActivities = [
+interface Activity {
+  id: string;
+  name: string;
+  description: string;
+  type: 'flash' | 'newuser' | 'invite' | 'festival' | 'discount';
+  icon: typeof Zap;
+  gradient: string;
+  status: '进行中' | '未开始' | '已结束';
+  startTime: string;
+  endTime: string;
+  participants: number;
+  orders: number;
+  revenue: number;
+  banner: string;
+}
+
+const typeConfig = {
+  'flash': { name: '秒杀', color: 'from-orange-500 to-red-500' },
+  'newuser': { name: '新人', color: 'from-blue-500 to-purple-500' },
+  'invite': { name: '邀请', color: 'from-green-500 to-teal-500' },
+  'festival': { name: '节日', color: 'from-yellow-500 to-orange-500' },
+  'discount': { name: '满减', color: 'from-purple-500 to-pink-500' },
+};
+
+const initialActivities: Activity[] = [
   {
     id: '1',
     name: '限时秒杀',
@@ -80,27 +104,76 @@ const mockActivities = [
   },
 ];
 
-const typeConfig = {
-  'flash': { name: '秒杀', color: 'from-orange-500 to-red-500' },
-  'newuser': { name: '新人', color: 'from-blue-500 to-purple-500' },
-  'invite': { name: '邀请', color: 'from-green-500 to-teal-500' },
-  'festival': { name: '节日', color: 'from-yellow-500 to-orange-500' },
-  'discount': { name: '满减', color: 'from-purple-500 to-pink-500' },
-};
+const activityTypes = [
+  { value: 'flash', label: '秒杀', icon: Zap },
+  { value: 'newuser', label: '新人', icon: Gift },
+  { value: 'invite', label: '邀请', icon: Users },
+  { value: 'festival', label: '节日', icon: Percent },
+  { value: 'discount', label: '满减', icon: TrendingUp },
+];
+
+const gradients = [
+  'from-orange-500 to-red-500',
+  'from-blue-500 to-purple-500',
+  'from-green-500 to-teal-500',
+  'from-yellow-500 to-orange-500',
+  'from-purple-500 to-pink-500',
+];
 
 export default function AdminActivitiesPage() {
+  const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('全部');
 
-  const filteredActivities = mockActivities.filter(activity => {
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [editingActivity, setEditingActivity] = useState<Partial<Activity>>({});
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Form state
+  const [formData, setFormData] = useState<Partial<Activity>>({
+    name: '',
+    description: '',
+    type: 'flash',
+    gradient: 'from-orange-500 to-red-500',
+    banner: '',
+    startTime: new Date().toISOString().split('T')[0] + ' 00:00',
+    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] + ' 23:59',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
+
+  const getActivityStatus = (activity: Activity): Activity['status'] => {
+    const now = new Date();
+    const start = new Date(activity.startTime);
+    const end = new Date(activity.endTime);
+    if (now < start) return '未开始';
+    if (now > end) return '已结束';
+    return '进行中';
+  };
+
+  const filteredActivities = activities.filter(activity => {
     const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === '全部' || activity.status === selectedStatus;
+    const matchesStatus = selectedStatus === '全部' || getActivityStatus(activity) === selectedStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const totalParticipants = mockActivities.reduce((sum, a) => sum + a.participants, 0);
-  const totalRevenue = mockActivities.reduce((sum, a) => sum + a.revenue, 0);
-  const activeCount = mockActivities.filter(a => a.status === '进行中').length;
+  const totalParticipants = activities.reduce((sum, a) => sum + a.participants, 0);
+  const totalRevenue = activities.reduce((sum, a) => sum + a.revenue, 0);
+  const activeCount = activities.filter(a => getActivityStatus(a) === '进行中').length;
 
   const statusConfig = {
     '进行中': 'bg-green-100 text-green-700',
@@ -108,15 +181,144 @@ export default function AdminActivitiesPage() {
     '已结束': 'bg-gray-100 text-gray-700',
   };
 
+  const handleAdd = () => {
+    setFormData({
+      name: '',
+      description: '',
+      type: 'flash',
+      gradient: 'from-orange-500 to-red-500',
+      banner: '',
+      startTime: new Date().toISOString().split('T')[0] + ' 00:00',
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] + ' 23:59',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleEdit = (activity: Activity) => {
+    setEditingActivity({ ...activity });
+    setShowEditModal(true);
+  };
+
+  const handleView = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setShowDetailModal(true);
+  };
+
+  const handleDelete = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedActivity) {
+      setActivities(activities.filter(a => a.id !== selectedActivity.id));
+      showToast(`活动"${selectedActivity.name}"已删除`);
+      setShowDeleteModal(false);
+      setSelectedActivity(null);
+    }
+  };
+
+  const handleToggleStatus = (activity: Activity) => {
+    const currentStatus = getActivityStatus(activity);
+    if (currentStatus === '进行中') {
+      // Pause - set end time to now
+      setActivities(
+        activities.map(a =>
+          a.id === activity.id ? { ...a, endTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
+        )
+      );
+      showToast(`活动"${activity.name}"已暂停`);
+    } else if (currentStatus === '未开始') {
+      // Start immediately
+      setActivities(
+        activities.map(a =>
+          a.id === activity.id ? { ...a, startTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
+        )
+      );
+      showToast(`活动"${activity.name}"已开始`);
+    }
+  };
+
+  const handleSaveAdd = () => {
+    if (!formData.name || !formData.description) {
+      showToast('请填写活动名称和描述', 'error');
+      return;
+    }
+    const typeIcons: Record<string, typeof Zap> = {
+      'flash': Zap,
+      'newuser': Gift,
+      'invite': Users,
+      'festival': Percent,
+      'discount': TrendingUp,
+    };
+    const newActivity: Activity = {
+      id: Date.now().toString(),
+      name: formData.name || '',
+      description: formData.description || '',
+      type: (formData.type as Activity['type']) || 'flash',
+      icon: typeIcons[formData.type as string] || Zap,
+      gradient: formData.gradient || 'from-orange-500 to-red-500',
+      banner: formData.banner || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=300&fit=crop',
+      startTime: formData.startTime || '',
+      endTime: formData.endTime || '',
+      participants: 0,
+      orders: 0,
+      revenue: 0,
+    };
+    setActivities([...activities, newActivity]);
+    showToast(`活动"${newActivity.name}"创建成功`);
+    setShowAddModal(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingActivity.id || !editingActivity.name) {
+      showToast('请填写完整信息', 'error');
+      return;
+    }
+    const typeIcons: Record<string, typeof Zap> = {
+      'flash': Zap,
+      'newuser': Gift,
+      'invite': Users,
+      'festival': Percent,
+      'discount': TrendingUp,
+    };
+    setActivities(
+      activities.map(a =>
+        a.id === editingActivity.id
+          ? {
+              ...a,
+              ...editingActivity,
+              icon: typeIcons[editingActivity.type as string] || a.icon,
+            } as Activity
+          : a
+      )
+    );
+    showToast(`活动"${editingActivity.name}"更新成功`);
+    setShowEditModal(false);
+    setEditingActivity({});
+  };
+
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+            toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}
+        >
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">活动管理</h2>
           <p className="text-gray-500 text-sm mt-1">创建和管理平台促销活动</p>
         </div>
-        <Button className="bg-gradient-to-r from-orange-500 to-blue-500">
+        <Button onClick={handleAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
           <Plus className="w-4 h-4 mr-2" />
           创建活动
         </Button>
@@ -183,6 +385,7 @@ export default function AdminActivitiesPage() {
       {/* Activities List */}
       <div className="space-y-6">
         {filteredActivities.map((activity) => {
+          const currentStatus = getActivityStatus(activity);
           const Icon = activity.icon;
           return (
             <div key={activity.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -200,8 +403,8 @@ export default function AdminActivitiesPage() {
                   <span className={`px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium`}>
                     {typeConfig[activity.type as keyof typeof typeConfig].name}
                   </span>
-                  <span className={`px-3 py-1 backdrop-blur-sm rounded-full text-xs font-medium ${statusConfig[activity.status as keyof typeof statusConfig]}`}>
-                    {activity.status}
+                  <span className={`px-3 py-1 backdrop-blur-sm rounded-full text-xs font-medium ${statusConfig[currentStatus as keyof typeof statusConfig]}`}>
+                    {currentStatus}
                   </span>
                 </div>
               </div>
@@ -214,22 +417,26 @@ export default function AdminActivitiesPage() {
                     <p className="text-gray-600 text-sm">{activity.description}</p>
                   </div>
                   <div className="flex gap-2">
-                    {activity.status === '进行中' ? (
-                      <Button variant="outline" size="sm" className="text-orange-600">
+                    {currentStatus === '进行中' ? (
+                      <Button variant="outline" size="sm" className="text-orange-600" onClick={() => handleToggleStatus(activity)}>
                         <Pause className="w-4 h-4 mr-1" />
                         暂停
                       </Button>
-                    ) : activity.status === '未开始' ? (
-                      <Button size="sm" className="bg-gradient-to-r from-green-500 to-teal-500">
+                    ) : currentStatus === '未开始' ? (
+                      <Button size="sm" className="bg-gradient-to-r from-green-500 to-teal-500" onClick={() => handleToggleStatus(activity)}>
                         <Play className="w-4 h-4 mr-1" />
                         立即开始
                       </Button>
                     ) : null}
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleView(activity)}>
+                      <Eye className="w-4 h-4 mr-1" />
+                      详情
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(activity)}>
                       <Edit className="w-4 h-4 mr-1" />
                       编辑
                     </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+                    <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => handleDelete(activity)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -259,7 +466,7 @@ export default function AdminActivitiesPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-4 border-t border-gray-100">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleView(activity)}>
                     查看详情
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1">
@@ -274,6 +481,298 @@ export default function AdminActivitiesPage() {
           );
         })}
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">创建活动</h3>
+                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">活动名称</label>
+                <input
+                  type="text"
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="例如：限时秒杀"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">活动描述</label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="请输入活动描述"
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">活动类型</label>
+                  <select
+                    value={formData.type || 'flash'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Activity['type'] })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {activityTypes.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">背景渐变</label>
+                  <select
+                    value={formData.gradient || 'from-orange-500 to-red-500'}
+                    onChange={(e) => setFormData({ ...formData, gradient: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {gradients.map((g) => (
+                      <option key={g} value={g}>{g.replace('from-', '').replace(' to-', ' / ')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Banner图片URL</label>
+                <input
+                  type="text"
+                  value={formData.banner || ''}
+                  onChange={(e) => setFormData({ ...formData, banner: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">开始时间</label>
+                  <input
+                    type="datetime-local"
+                    value={formData.startTime || ''}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">结束时间</label>
+                  <input
+                    type="datetime-local"
+                    value={formData.endTime || ''}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                创建活动
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingActivity && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">编辑活动</h3>
+                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">活动名称</label>
+                <input
+                  type="text"
+                  value={editingActivity.name || ''}
+                  onChange={(e) => setEditingActivity({ ...editingActivity, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">活动描述</label>
+                <textarea
+                  value={editingActivity.description || ''}
+                  onChange={(e) => setEditingActivity({ ...editingActivity, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">活动类型</label>
+                  <select
+                    value={editingActivity.type || 'flash'}
+                    onChange={(e) => setEditingActivity({ ...editingActivity, type: e.target.value as Activity['type'] })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {activityTypes.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">背景渐变</label>
+                  <select
+                    value={editingActivity.gradient || 'from-orange-500 to-red-500'}
+                    onChange={(e) => setEditingActivity({ ...editingActivity, gradient: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {gradients.map((g) => (
+                      <option key={g} value={g}>{g.replace('from-', '').replace(' to-', ' / ')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Banner图片URL</label>
+                <input
+                  type="text"
+                  value={editingActivity.banner || ''}
+                  onChange={(e) => setEditingActivity({ ...editingActivity, banner: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">开始时间</label>
+                  <input
+                    type="datetime-local"
+                    value={editingActivity.startTime || ''}
+                    onChange={(e) => setEditingActivity({ ...editingActivity, startTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">结束时间</label>
+                  <input
+                    type="datetime-local"
+                    value={editingActivity.endTime || ''}
+                    onChange={(e) => setEditingActivity({ ...editingActivity, endTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                保存修改
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedActivity && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">活动详情</h3>
+                <button onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className={`h-40 rounded-xl relative overflow-hidden mb-4`}>
+                <img src={selectedActivity.banner} alt="" className="w-full h-full object-cover" />
+                <div className={`absolute inset-0 bg-gradient-to-br ${selectedActivity.gradient} opacity-60`}></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <h3 className="text-2xl font-bold">{selectedActivity.name}</h3>
+                    <p className="opacity-90">{selectedActivity.description}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`px-3 py-1 bg-gradient-to-r ${typeConfig[selectedActivity.type as keyof typeof typeConfig].color} text-white text-sm rounded-full`}>
+                  {typeConfig[selectedActivity.type as keyof typeof typeConfig].name}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm ${statusConfig[getActivityStatus(selectedActivity) as keyof typeof statusConfig]}`}>
+                  {getActivityStatus(selectedActivity)}
+                </span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">活动ID</span>
+                  <span className="font-medium">{selectedActivity.id}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">活动时间</span>
+                  <span className="font-medium">{selectedActivity.startTime} 至 {selectedActivity.endTime}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">参与人数</span>
+                  <span className="font-medium text-blue-600">{selectedActivity.participants.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">订单数</span>
+                  <span className="font-medium text-green-600">{selectedActivity.orders.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-500">销售额</span>
+                  <span className="font-medium text-orange-600">¥{(selectedActivity.revenue / 10000).toFixed(1)}万</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDetailModal(false)}>
+                关闭
+              </Button>
+              <Button onClick={() => { setShowDetailModal(false); handleEdit(selectedActivity); }} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                编辑活动
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedActivity && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">确认删除</h3>
+              <p className="text-gray-600">
+                确定要删除活动 "{selectedActivity.name}" 吗？此操作无法撤销。
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                取消
+              </Button>
+              <Button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white">
+                确认删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

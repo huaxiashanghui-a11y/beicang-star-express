@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Volume2, Clock, Eye, Pin, MessageCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Volume2, Clock, Eye, Pin, X, Check, AlertTriangle, Send } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const mockAnnouncements = [
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  type: 'important' | 'promotion' | 'system' | 'policy';
+  typeName: string;
+  author: string;
+  createdAt: string;
+  views: number;
+  status: '已发布' | '草稿';
+  isPinned: boolean;
+}
+
+const initialAnnouncements: Announcement[] = [
   {
     id: '1',
     title: '春节期间配送时间调整通知',
@@ -73,27 +86,190 @@ const typeColors = {
 };
 
 export default function AdminAnnouncementsPage() {
+  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('全部');
 
-  const filteredAnnouncements = mockAnnouncements.filter(ann => {
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Partial<Announcement>>({});
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Form state
+  const [formData, setFormData] = useState<Partial<Announcement>>({
+    title: '',
+    content: '',
+    type: 'important',
+    typeName: '重要',
+    author: '管理员',
+    status: '草稿',
+    isPinned: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
+
+  const filteredAnnouncements = announcements.filter(ann => {
     const matchesSearch = ann.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === '全部' || ann.type === selectedType;
     return matchesSearch && matchesType;
   });
 
-  const totalViews = mockAnnouncements.reduce((sum, a) => sum + a.views, 0);
-  const publishedCount = mockAnnouncements.filter(a => a.status === '已发布').length;
+  const totalViews = announcements.reduce((sum, a) => sum + a.views, 0);
+  const publishedCount = announcements.filter(a => a.status === '已发布').length;
+
+  const handleAdd = () => {
+    setFormData({
+      title: '',
+      content: '',
+      type: 'important',
+      typeName: '重要',
+      author: '管理员',
+      status: '草稿',
+      isPinned: false,
+    });
+    setShowAddModal(true);
+  };
+
+  const handleEdit = (announcement: Announcement) => {
+    setEditingAnnouncement({ ...announcement });
+    setShowEditModal(true);
+  };
+
+  const handleView = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setShowDetailModal(true);
+  };
+
+  const handleDelete = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedAnnouncement) {
+      setAnnouncements(announcements.filter(a => a.id !== selectedAnnouncement.id));
+      showToast(`公告"${selectedAnnouncement.title}"已删除`);
+      setShowDeleteModal(false);
+      setSelectedAnnouncement(null);
+    }
+  };
+
+  const handleTogglePin = (announcement: Announcement) => {
+    setAnnouncements(
+      announcements.map(a =>
+        a.id === announcement.id ? { ...a, isPinned: !a.isPinned } : a
+      )
+    );
+    showToast(announcement.isPinned ? `公告"${announcement.title}"已取消置顶` : `公告"${announcement.title}"已置顶`);
+  };
+
+  const handlePublish = (announcement: Announcement) => {
+    setAnnouncements(
+      announcements.map(a =>
+        a.id === announcement.id ? { ...a, status: '已发布' as const, createdAt: new Date().toLocaleString('zh-CN') } : a
+      )
+    );
+    showToast(`公告"${announcement.title}"已发布`);
+  };
+
+  const handleUnpublish = (announcement: Announcement) => {
+    setAnnouncements(
+      announcements.map(a =>
+        a.id === announcement.id ? { ...a, status: '草稿' as const } : a
+      )
+    );
+    showToast(`公告"${announcement.title}"已撤回`);
+  };
+
+  const handleSaveAdd = () => {
+    if (!formData.title || !formData.content) {
+      showToast('请填写公告标题和内容', 'error');
+      return;
+    }
+    const typeNames: Record<string, string> = {
+      'important': '重要',
+      'promotion': '促销',
+      'system': '系统',
+      'policy': '政策',
+    };
+    const newAnnouncement: Announcement = {
+      id: Date.now().toString(),
+      title: formData.title || '',
+      content: formData.content || '',
+      type: (formData.type as Announcement['type']) || 'important',
+      typeName: typeNames[formData.type as string] || '重要',
+      author: formData.author || '管理员',
+      createdAt: new Date().toLocaleString('zh-CN'),
+      views: 0,
+      status: (formData.status as Announcement['status']) || '草稿',
+      isPinned: formData.isPinned || false,
+    };
+    setAnnouncements([newAnnouncement, ...announcements]);
+    showToast(`公告"${newAnnouncement.title}"创建成功`);
+    setShowAddModal(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingAnnouncement.id || !editingAnnouncement.title) {
+      showToast('请填写完整信息', 'error');
+      return;
+    }
+    const typeNames: Record<string, string> = {
+      'important': '重要',
+      'promotion': '促销',
+      'system': '系统',
+      'policy': '政策',
+    };
+    setAnnouncements(
+      announcements.map(a =>
+        a.id === editingAnnouncement.id
+          ? {
+              ...a,
+              ...editingAnnouncement,
+              typeName: typeNames[editingAnnouncement.type as string] || a.typeName,
+            }
+          : a
+      )
+    );
+    showToast(`公告"${editingAnnouncement.title}"更新成功`);
+    setShowEditModal(false);
+    setEditingAnnouncement({});
+  };
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+            toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}
+        >
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">公告管理</h2>
           <p className="text-gray-500 text-sm mt-1">发布和管理平台公告</p>
         </div>
-        <Button className="bg-gradient-to-r from-orange-500 to-blue-500">
+        <Button onClick={handleAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
           <Plus className="w-4 h-4 mr-2" />
           发布公告
         </Button>
@@ -106,7 +282,7 @@ export default function AdminAnnouncementsPage() {
             <Volume2 className="w-5 h-5 text-blue-500" />
             <p className="text-sm text-gray-600">总公告数</p>
           </div>
-          <p className="text-2xl font-bold text-gray-800">{mockAnnouncements.length}</p>
+          <p className="text-2xl font-bold text-gray-800">{announcements.length}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -128,7 +304,7 @@ export default function AdminAnnouncementsPage() {
             <p className="text-sm text-gray-600">置顶公告</p>
           </div>
           <p className="text-2xl font-bold text-red-600">
-            {mockAnnouncements.filter(a => a.isPinned).length}
+            {announcements.filter(a => a.isPinned).length}
           </p>
         </div>
       </div>
@@ -152,10 +328,10 @@ export default function AdminAnnouncementsPage() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             <option>全部</option>
-            <option>important</option>
-            <option>promotion</option>
-            <option>system</option>
-            <option>policy</option>
+            <option value="important">重要</option>
+            <option value="promotion">促销</option>
+            <option value="system">系统</option>
+            <option value="policy">政策</option>
           </select>
         </div>
       </div>
@@ -170,7 +346,7 @@ export default function AdminAnnouncementsPage() {
                   <Volume2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <h3 className="font-semibold text-gray-800">{announcement.title}</h3>
                     {announcement.isPinned && (
                       <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full flex items-center gap-1">
@@ -188,7 +364,7 @@ export default function AdminAnnouncementsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{announcement.content}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {announcement.createdAt}
@@ -201,16 +377,45 @@ export default function AdminAnnouncementsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
+              <div className="flex items-center gap-2 ml-4">
+                <Button variant="outline" size="sm" onClick={() => handleView(announcement)}>
                   <Eye className="w-4 h-4 mr-1" />
                   预览
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => handleEdit(announcement)}>
                   <Edit className="w-4 h-4 mr-1" />
                   编辑
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleTogglePin(announcement)}
+                  className={announcement.isPinned ? 'text-red-600' : 'text-blue-600'}
+                >
+                  <Pin className="w-4 h-4 mr-1" />
+                  {announcement.isPinned ? '取消置顶' : '置顶'}
+                </Button>
+                {announcement.status === '草稿' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePublish(announcement)}
+                    className="text-green-600"
+                  >
+                    <Send className="w-4 h-4 mr-1" />
+                    发布
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUnpublish(announcement)}
+                    className="text-orange-600"
+                  >
+                    撤回
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => handleDelete(announcement)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -218,6 +423,273 @@ export default function AdminAnnouncementsPage() {
           </div>
         ))}
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">发布公告</h3>
+                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">公告标题</label>
+                <input
+                  type="text"
+                  value={formData.title || ''}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="请输入公告标题"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">公告内容</label>
+                <textarea
+                  value={formData.content || ''}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  placeholder="请输入公告内容"
+                  rows={5}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">公告类型</label>
+                  <select
+                    value={formData.type || 'important'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Announcement['type'] })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="important">重要</option>
+                    <option value="promotion">促销</option>
+                    <option value="system">系统</option>
+                    <option value="policy">政策</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">发布者</label>
+                  <input
+                    type="text"
+                    value={formData.author || '管理员'}
+                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.isPinned || false}
+                    onChange={(e) => setFormData({ ...formData, isPinned: e.target.checked })}
+                    className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700">置顶公告</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">发布状态</label>
+                <select
+                  value={formData.status || '草稿'}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Announcement['status'] })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="草稿">草稿</option>
+                  <option value="已发布">立即发布</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                发布公告
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingAnnouncement && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">编辑公告</h3>
+                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">公告标题</label>
+                <input
+                  type="text"
+                  value={editingAnnouncement.title || ''}
+                  onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, title: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">公告内容</label>
+                <textarea
+                  value={editingAnnouncement.content || ''}
+                  onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, content: e.target.value })}
+                  rows={5}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">公告类型</label>
+                  <select
+                    value={editingAnnouncement.type || 'important'}
+                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, type: e.target.value as Announcement['type'] })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="important">重要</option>
+                    <option value="promotion">促销</option>
+                    <option value="system">系统</option>
+                    <option value="policy">政策</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">发布者</label>
+                  <input
+                    type="text"
+                    value={editingAnnouncement.author || ''}
+                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, author: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editingAnnouncement.isPinned || false}
+                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, isPinned: e.target.checked })}
+                    className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700">置顶公告</span>
+                </label>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                保存修改
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedAnnouncement && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">公告详情</h3>
+                <button onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-10 h-10 ${typeColors[selectedAnnouncement.type as keyof typeof typeColors]} rounded-lg flex items-center justify-center text-white`}>
+                  <Volume2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">{selectedAnnouncement.title}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`px-2 py-0.5 ${typeColors[selectedAnnouncement.type as keyof typeof typeColors]} text-white text-xs rounded-full`}>
+                      {selectedAnnouncement.typeName}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      selectedAnnouncement.status === '已发布' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedAnnouncement.status}
+                    </span>
+                    {selectedAnnouncement.isPinned && (
+                      <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full flex items-center gap-1">
+                        <Pin className="w-3 h-3" />
+                        置顶
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <p className="text-gray-700 whitespace-pre-wrap">{selectedAnnouncement.content}</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">公告ID</span>
+                  <span className="font-medium">{selectedAnnouncement.id}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">发布者</span>
+                  <span className="font-medium">{selectedAnnouncement.author}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">发布时间</span>
+                  <span className="font-medium">{selectedAnnouncement.createdAt}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-500">浏览量</span>
+                  <span className="font-medium text-blue-600">{selectedAnnouncement.views.toLocaleString()} 次</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDetailModal(false)}>
+                关闭
+              </Button>
+              <Button onClick={() => { setShowDetailModal(false); handleEdit(selectedAnnouncement); }} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                编辑公告
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedAnnouncement && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">确认删除</h3>
+              <p className="text-gray-600">
+                确定要删除公告 "{selectedAnnouncement.title}" 吗？此操作无法撤销。
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                取消
+              </Button>
+              <Button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white">
+                确认删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

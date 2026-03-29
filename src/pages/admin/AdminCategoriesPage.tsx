@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Grid3X3, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Grid3X3, ChevronRight, X, Check, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const mockCategories = [
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  productCount: number;
+  revenue: string;
+  status: '启用' | '禁用';
+  children: { id: string; name: string; productCount: number }[];
+}
+
+const initialCategories: Category[] = [
   {
     id: '1',
     name: '数码电子',
@@ -68,10 +78,38 @@ const mockCategories = [
   },
 ];
 
+const availableIcons = ['📱', '👗', '💄', '🏠', '🍔', '⚽', '🎮', '📚', '🛋️', '🎁', '💊', '🔧'];
+
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState(mockCategories);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Partial<Category>>({});
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Form state
+  const [formData, setFormData] = useState<Partial<Category>>({
+    name: '',
+    icon: '📱',
+    status: '启用',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedCategories(prev =>
@@ -81,18 +119,109 @@ export default function AdminCategoriesPage() {
     );
   };
 
+  const handleAdd = () => {
+    setFormData({ name: '', icon: '📱', status: '启用' });
+    setShowAddModal(true);
+  };
+
+  const handleEdit = (category: Category) => {
+    setEditingCategory({ ...category });
+    setShowEditModal(true);
+  };
+
+  const handleView = (category: Category) => {
+    setSelectedCategory(category);
+    setShowDetailModal(true);
+  };
+
+  const handleDelete = (category: Category) => {
+    setSelectedCategory(category);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedCategory) {
+      setCategories(categories.filter(c => c.id !== selectedCategory.id));
+      showToast(`分类"${selectedCategory.name}"已删除`);
+      setShowDeleteModal(false);
+      setSelectedCategory(null);
+    }
+  };
+
+  const handleToggleStatus = (category: Category) => {
+    setCategories(
+      categories.map(c =>
+        c.id === category.id
+          ? { ...c, status: c.status === '启用' ? '禁用' : '启用' }
+          : c
+      )
+    );
+    const newStatus = category.status === '启用' ? '禁用' : '启用';
+    showToast(`分类"${category.name}"已${newStatus}`);
+  };
+
+  const handleSaveAdd = () => {
+    if (!formData.name) {
+      showToast('请填写分类名称', 'error');
+      return;
+    }
+    const newCategory: Category = {
+      id: Date.now().toString(),
+      name: formData.name || '',
+      icon: formData.icon || '📱',
+      productCount: 0,
+      revenue: '¥0',
+      status: (formData.status as Category['status']) || '启用',
+      children: [],
+    };
+    setCategories([...categories, newCategory]);
+    showToast(`分类"${newCategory.name}"创建成功`);
+    setShowAddModal(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingCategory.id || !editingCategory.name) {
+      showToast('请填写完整信息', 'error');
+      return;
+    }
+    setCategories(
+      categories.map(c =>
+        c.id === editingCategory.id
+          ? { ...c, name: editingCategory.name, icon: editingCategory.icon, status: editingCategory.status as Category['status'] }
+          : c
+      )
+    );
+    showToast(`分类"${editingCategory.name}"更新成功`);
+    setShowEditModal(false);
+    setEditingCategory({});
+  };
+
+  // Calculate stats
+  const totalLevel1 = categories.length;
+  const totalLevel2 = categories.reduce((sum, c) => sum + c.children.length, 0);
+  const totalProducts = categories.reduce((sum, c) => sum + c.productCount, 0);
+
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+            toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}
+        >
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">分类管理</h2>
           <p className="text-gray-500 text-sm mt-1">管理商品分类和子分类</p>
         </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600"
-        >
+        <Button onClick={handleAdd} className="bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600">
           <Plus className="w-4 h-4 mr-2" />
           添加分类
         </Button>
@@ -101,9 +230,9 @@ export default function AdminCategoriesPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: '一级分类', count: 6, icon: '📂' },
-          { label: '二级分类', count: 10, icon: '📁' },
-          { label: '商品总数', count: 1454, icon: '📦' },
+          { label: '一级分类', count: totalLevel1, icon: '📂' },
+          { label: '二级分类', count: totalLevel2, icon: '📁' },
+          { label: '商品总数', count: totalProducts, icon: '📦' },
           { label: '本月新增', count: 45, icon: '🆕' },
         ].map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm p-4">
@@ -190,16 +319,23 @@ export default function AdminCategoriesPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Edit className="w-4 h-4 mr-2" />
-                  编辑
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleView(category)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  详情
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleEdit(category)}>
+                  <Edit className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => handleToggleStatus(category)}
                   className={category.status === '启用' ? 'text-red-600' : 'text-green-600'}
                 >
                   {category.status === '启用' ? '禁用' : '启用'}
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => handleDelete(category)}>
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -228,6 +364,18 @@ export default function AdminCategoriesPage() {
                   }`}>
                     {category.status}
                   </span>
+                  <button
+                    onClick={() => handleEdit(category)}
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(category)}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                   {category.children.length > 0 && (
                     <button
                       onClick={() => toggleExpand(category.id)}
@@ -254,14 +402,6 @@ export default function AdminCategoriesPage() {
                         <span className="text-gray-700">{child.name}</span>
                         <span className="text-sm text-gray-500">({child.productCount}件)</span>
                       </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -270,6 +410,230 @@ export default function AdminCategoriesPage() {
           ))}
         </div>
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">添加分类</h3>
+                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">分类名称</label>
+                <input
+                  type="text"
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="例如：数码电子"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">选择图标</label>
+                <div className="grid grid-cols-6 gap-2">
+                  {availableIcons.map((icon) => (
+                    <button
+                      key={icon}
+                      onClick={() => setFormData({ ...formData, icon })}
+                      className={`w-12 h-12 text-2xl rounded-lg border-2 transition-all ${
+                        formData.icon === icon
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                <select
+                  value={formData.status || '启用'}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as '启用' | '禁用' })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="启用">启用</option>
+                  <option value="禁用">禁用</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveAdd} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                添加分类
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingCategory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">编辑分类</h3>
+                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">分类名称</label>
+                <input
+                  type="text"
+                  value={editingCategory.name || ''}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">选择图标</label>
+                <div className="grid grid-cols-6 gap-2">
+                  {availableIcons.map((icon) => (
+                    <button
+                      key={icon}
+                      onClick={() => setEditingCategory({ ...editingCategory, icon })}
+                      className={`w-12 h-12 text-2xl rounded-lg border-2 transition-all ${
+                        editingCategory.icon === icon
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                <select
+                  value={editingCategory.status || '启用'}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, status: e.target.value as '启用' | '禁用' })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="启用">启用</option>
+                  <option value="禁用">禁用</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                保存修改
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedCategory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">分类详情</h3>
+                <button onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-blue-500 rounded-xl flex items-center justify-center text-3xl">
+                  {selectedCategory.icon}
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-gray-800">{selectedCategory.name}</h4>
+                  <p className="text-sm text-gray-500">分类ID: {selectedCategory.id}</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">状态</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    selectedCategory.status === '启用' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {selectedCategory.status}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">商品数量</span>
+                  <span className="font-medium">{selectedCategory.productCount}件</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">销售额</span>
+                  <span className="font-medium text-orange-600">{selectedCategory.revenue}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-500">子分类</span>
+                  <span className="font-medium">{selectedCategory.children.length}个</span>
+                </div>
+              </div>
+              {selectedCategory.children.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">子分类列表</p>
+                  <div className="space-y-2">
+                    {selectedCategory.children.map((child) => (
+                      <div key={child.id} className="flex justify-between p-2 bg-gray-50 rounded-lg">
+                        <span className="text-gray-700">{child.name}</span>
+                        <span className="text-gray-500">{child.productCount}件</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDetailModal(false)}>
+                关闭
+              </Button>
+              <Button onClick={() => { setShowDetailModal(false); handleEdit(selectedCategory); }} className="bg-gradient-to-r from-orange-500 to-blue-500">
+                编辑分类
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedCategory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">确认删除</h3>
+              <p className="text-gray-600">
+                确定要删除分类 "{selectedCategory.name}" 吗？此操作无法撤销。
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                取消
+              </Button>
+              <Button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white">
+                确认删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
