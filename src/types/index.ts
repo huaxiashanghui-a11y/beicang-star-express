@@ -6,6 +6,13 @@ export interface User {
   phone: string
   avatar?: string
   address?: Address
+  balance: number
+  points: number
+  country?: string
+  language?: string
+  theme?: 'light' | 'dark' | 'system'
+  wechat?: string
+  telegram?: string
   createdAt: string
 }
 

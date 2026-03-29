@@ -17,6 +17,7 @@ interface AppState {
 
 type AppAction =
   | { type: 'SET_USER'; payload: User | null }
+  | { type: 'UPDATE_USER'; payload: Partial<User> }
   | { type: 'LOGIN'; payload: User }
   | { type: 'LOGOUT' }
   | { type: 'ADD_TO_CART'; payload: { product: any; quantity: number; specifications: Record<string, string> } }
@@ -25,7 +26,7 @@ type AppAction =
   | { type: 'TOGGLE_CART_ITEM'; payload: string }
   | { type: 'SELECT_ALL_CART'; payload: boolean }
   | { type: 'CLEAR_CART' }
-  | { type: 'ADD_ORDER'; payload: Order }
+  | { type: 'ADD_ORDER'; payload: { order: Order } }
   | { type: 'UPDATE_ORDER'; payload: { id: string; updates: Partial<Order> } }
   | { type: 'ADD_NOTIFICATION'; payload: Notification }
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
@@ -69,6 +70,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_USER':
       return { ...state, user: action.payload, isAuthenticated: !!action.payload }
+    case 'UPDATE_USER':
+      return { ...state, user: state.user ? { ...state.user, ...action.payload } : null }
     case 'LOGIN':
       return { ...state, user: action.payload, isAuthenticated: true }
     case 'LOGOUT':
@@ -127,7 +130,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'CLEAR_CART':
       return { ...state, cart: [] }
     case 'ADD_ORDER':
-      return { ...state, orders: [action.payload, ...state.orders], cart: [] }
+      return { ...state, orders: [action.payload.order, ...state.orders], cart: [] }
     case 'UPDATE_ORDER':
       return {
         ...state,

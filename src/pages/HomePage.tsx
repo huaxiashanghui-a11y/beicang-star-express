@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, Bell, ChevronRight, Flame, Sparkles, Shield, Truck, CreditCard, Headphones } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Search, ChevronRight, Flame, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { useApp } from '@/context/AppContext'
 import { products, categories, banners } from '@/data/mockData'
 import ProductCard from '@/components/ProductCard'
 import { HomePageSkeleton } from '@/components/Skeleton'
 import Carousel from '@/components/Carousel'
+import MarqueeNotice from '@/components/MarqueeNotice'
 
 export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
@@ -19,7 +17,6 @@ export default function HomePage() {
   const { state } = useApp()
 
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => setLoading(false), 500)
     return () => clearTimeout(timer)
   }, [])
@@ -49,28 +46,21 @@ export default function HomePage() {
     <div className="bg-gradient-to-b from-primary/5 via-background to-background">
       {/* Search Bar */}
       <div className="sticky top-14 z-30 px-4 py-3 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="搜索商品..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-12 h-12 rounded-xl bg-muted/50"
-            />
-          </div>
-          <Link to="/notifications">
-            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl relative">
-              <Bell className="w-5 h-5" />
-              {state.notifications.filter(n => !n.isRead).length > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
-              )}
-            </Button>
-          </Link>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="搜索商品..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="pl-12 h-12 rounded-xl bg-muted/50"
+          />
         </div>
       </div>
+
+      {/* Marquee Notice */}
+      <MarqueeNotice />
 
       <div className="max-w-lg mx-auto">
         {/* Hero Banner */}
@@ -108,23 +98,6 @@ export default function HomePage() {
                 />
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Quick Services */}
-        <div className="px-4 pb-4">
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { icon: Shield, label: '正品保障', color: 'text-green-600' },
-              { icon: Truck, label: '全球物流', color: 'text-blue-600' },
-              { icon: CreditCard, label: '安全支付', color: 'text-purple-600' },
-              { icon: Headphones, label: '在线客服', color: 'text-orange-600' },
-            ].map((service, index) => (
-              <div key={index} className="flex flex-col items-center p-3 bg-card rounded-xl shadow-sm">
-                <service.icon className={`w-6 h-6 ${service.color} mb-1`} />
-                <span className="text-xs text-muted-foreground">{service.label}</span>
-              </div>
-            ))}
           </div>
         </div>
 
