@@ -1,0 +1,13 @@
+[
+  {
+    "id": "user-1",
+    "name": "张三",
+    "email": "zhangsan@example.com",
+    "phone": "+95 9 123 4567",
+    "password": "$2a$10$8K1p/a0dL1LXMIgZ7f7PN.8XvdFvJCRMr4vGf0vLPEZVYj8L6wQPa",
+    "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+    "createdAt": "2024-01-15T08:00:00.000Z",
+    "updatedAt": "2026-03-29T11:53:51.908Z",
+    "status": "active"
+  }
+]

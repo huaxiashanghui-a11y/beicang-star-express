@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Volume2, Clock, Eye, Pin, X, Check, AlertTriangle, Send } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
 
 interface Announcement {
   id: string;
@@ -86,9 +87,10 @@ const typeColors = {
 };
 
 export default function AdminAnnouncementsPage() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('全部');
+  const [loading, setLoading] = useState(true);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -104,6 +106,28 @@ export default function AdminAnnouncementsPage() {
     message: '',
     type: 'success',
   });
+
+  // Load announcements from API
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
+
+  const loadAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.announcements.list();
+      if (data.announcements) {
+        setAnnouncements(data.announcements);
+      } else if (Array.isArray(data)) {
+        setAnnouncements(data);
+      }
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
+      showToast('加载公告失败', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<Announcement>>({
@@ -158,95 +182,132 @@ export default function AdminAnnouncementsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedAnnouncement) {
-      setAnnouncements(announcements.filter(a => a.id !== selectedAnnouncement.id));
-      showToast(`公告"${selectedAnnouncement.title}"已删除`);
+      try {
+        await adminApi.announcements.delete(selectedAnnouncement.id);
+        setAnnouncements(announcements.filter(a => a.id !== selectedAnnouncement.id));
+        showToast(`公告"${selectedAnnouncement.title}"已删除`);
+      } catch (error) {
+        console.error('Failed to delete announcement:', error);
+        showToast('删除公告失败', 'error');
+      }
       setShowDeleteModal(false);
       setSelectedAnnouncement(null);
     }
   };
 
-  const handleTogglePin = (announcement: Announcement) => {
-    setAnnouncements(
-      announcements.map(a =>
-        a.id === announcement.id ? { ...a, isPinned: !a.isPinned } : a
-      )
-    );
-    showToast(announcement.isPinned ? `公告"${announcement.title}"已取消置顶` : `公告"${announcement.title}"已置顶`);
+  const handleTogglePin = async (announcement: Announcement) => {
+    try {
+      const newStatus = announcement.isPinned ? 'unpin' : 'pin';
+      await adminApi.announcements.updateStatus(announcement.id, newStatus);
+      setAnnouncements(
+        announcements.map(a =>
+          a.id === announcement.id ? { ...a, isPinned: !a.isPinned } : a
+        )
+      );
+      showToast(announcement.isPinned ? `公告"${announcement.title}"已取消置顶` : `公告"${announcement.title}"已置顶`);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+      showToast('操作失败', 'error');
+    }
   };
 
-  const handlePublish = (announcement: Announcement) => {
-    setAnnouncements(
-      announcements.map(a =>
-        a.id === announcement.id ? { ...a, status: '已发布' as const, createdAt: new Date().toLocaleString('zh-CN') } : a
-      )
-    );
-    showToast(`公告"${announcement.title}"已发布`);
+  const handlePublish = async (announcement: Announcement) => {
+    try {
+      await adminApi.announcements.updateStatus(announcement.id, 'publish');
+      setAnnouncements(
+        announcements.map(a =>
+          a.id === announcement.id ? { ...a, status: '已发布' as const, createdAt: new Date().toLocaleString('zh-CN') } : a
+        )
+      );
+      showToast(`公告"${announcement.title}"已发布`);
+    } catch (error) {
+      console.error('Failed to publish:', error);
+      showToast('发布失败', 'error');
+    }
   };
 
-  const handleUnpublish = (announcement: Announcement) => {
-    setAnnouncements(
-      announcements.map(a =>
-        a.id === announcement.id ? { ...a, status: '草稿' as const } : a
-      )
-    );
-    showToast(`公告"${announcement.title}"已撤回`);
+  const handleUnpublish = async (announcement: Announcement) => {
+    try {
+      await adminApi.announcements.updateStatus(announcement.id, 'draft');
+      setAnnouncements(
+        announcements.map(a =>
+          a.id === announcement.id ? { ...a, status: '草稿' as const } : a
+        )
+      );
+      showToast(`公告"${announcement.title}"已撤回`);
+    } catch (error) {
+      console.error('Failed to unpublish:', error);
+      showToast('操作失败', 'error');
+    }
   };
 
-  const handleSaveAdd = () => {
+  const handleSaveAdd = async () => {
     if (!formData.title || !formData.content) {
       showToast('请填写公告标题和内容', 'error');
       return;
     }
-    const typeNames: Record<string, string> = {
-      'important': '重要',
-      'promotion': '促销',
-      'system': '系统',
-      'policy': '政策',
-    };
-    const newAnnouncement: Announcement = {
-      id: Date.now().toString(),
-      title: formData.title || '',
-      content: formData.content || '',
-      type: (formData.type as Announcement['type']) || 'important',
-      typeName: typeNames[formData.type as string] || '重要',
-      author: formData.author || '管理员',
-      createdAt: new Date().toLocaleString('zh-CN'),
-      views: 0,
-      status: (formData.status as Announcement['status']) || '草稿',
-      isPinned: formData.isPinned || false,
-    };
-    setAnnouncements([newAnnouncement, ...announcements]);
-    showToast(`公告"${newAnnouncement.title}"创建成功`);
-    setShowAddModal(false);
+    try {
+      await adminApi.announcements.create(formData);
+      const typeNames: Record<string, string> = {
+        'important': '重要',
+        'promotion': '促销',
+        'system': '系统',
+        'policy': '政策',
+      };
+      const newAnnouncement: Announcement = {
+        id: Date.now().toString(),
+        title: formData.title || '',
+        content: formData.content || '',
+        type: (formData.type as Announcement['type']) || 'important',
+        typeName: typeNames[formData.type as string] || '重要',
+        author: formData.author || '管理员',
+        createdAt: new Date().toLocaleString('zh-CN'),
+        views: 0,
+        status: (formData.status as Announcement['status']) || '草稿',
+        isPinned: formData.isPinned || false,
+      };
+      setAnnouncements([newAnnouncement, ...announcements]);
+      showToast(`公告"${newAnnouncement.title}"创建成功`);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Failed to create announcement:', error);
+      showToast('创建公告失败', 'error');
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingAnnouncement.id || !editingAnnouncement.title) {
       showToast('请填写完整信息', 'error');
       return;
     }
-    const typeNames: Record<string, string> = {
-      'important': '重要',
-      'promotion': '促销',
-      'system': '系统',
-      'policy': '政策',
-    };
-    setAnnouncements(
-      announcements.map(a =>
-        a.id === editingAnnouncement.id
-          ? {
-              ...a,
-              ...editingAnnouncement,
-              typeName: typeNames[editingAnnouncement.type as string] || a.typeName,
-            }
-          : a
-      )
-    );
-    showToast(`公告"${editingAnnouncement.title}"更新成功`);
-    setShowEditModal(false);
-    setEditingAnnouncement({});
+    try {
+      await adminApi.announcements.update(editingAnnouncement.id, editingAnnouncement);
+      const typeNames: Record<string, string> = {
+        'important': '重要',
+        'promotion': '促销',
+        'system': '系统',
+        'policy': '政策',
+      };
+      setAnnouncements(
+        announcements.map(a =>
+          a.id === editingAnnouncement.id
+            ? {
+                ...a,
+                ...editingAnnouncement,
+                typeName: typeNames[editingAnnouncement.type as string] || a.typeName,
+              }
+            : a
+        )
+      );
+      showToast(`公告"${editingAnnouncement.title}"更新成功`);
+      setShowEditModal(false);
+      setEditingAnnouncement({});
+    } catch (error) {
+      console.error('Failed to update announcement:', error);
+      showToast('更新公告失败', 'error');
+    }
   };
 
   return (

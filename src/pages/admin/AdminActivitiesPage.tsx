@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Zap, Gift, Percent, Clock, Users, TrendingUp, Play, Pause, X, Check, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
 
 interface Activity {
   id: string;
@@ -121,9 +122,10 @@ const gradients = [
 ];
 
 export default function AdminActivitiesPage() {
-  const [activities, setActivities] = useState<Activity[]>(initialActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('全部');
+  const [loading, setLoading] = useState(true);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -139,6 +141,44 @@ export default function AdminActivitiesPage() {
     message: '',
     type: 'success',
   });
+
+  // Load banners as activities from API
+  useEffect(() => {
+    loadActivities();
+  }, []);
+
+  const loadActivities = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.banners.list();
+      if (data.banners && Array.isArray(data.banners)) {
+        // Map banners to activities
+        const mappedActivities: Activity[] = data.banners.map((b: any, index: number) => ({
+          id: b.id || `activity-${index}`,
+          name: b.title || b.name || '活动',
+          description: b.description || '',
+          type: 'flash' as const,
+          icon: Zap,
+          gradient: 'from-orange-500 to-red-500',
+          status: b.status === 'active' ? '进行中' as const : b.status === 'inactive' ? '已结束' as const : '未开始' as const,
+          startTime: b.startDate || b.startTime || '',
+          endTime: b.endDate || b.endTime || '',
+          participants: b.clicks || 0,
+          orders: 0,
+          revenue: 0,
+          banner: b.image || b.url || '',
+        }));
+        setActivities(mappedActivities.length > 0 ? mappedActivities : initialActivities);
+      } else {
+        setActivities(initialActivities);
+      }
+    } catch (error) {
+      console.error('Failed to load activities:', error);
+      setActivities(initialActivities);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<Activity>>({
@@ -209,93 +249,146 @@ export default function AdminActivitiesPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedActivity) {
-      setActivities(activities.filter(a => a.id !== selectedActivity.id));
-      showToast(`活动"${selectedActivity.name}"已删除`);
+      try {
+        await adminApi.banners.delete(selectedActivity.id);
+        setActivities(activities.filter(a => a.id !== selectedActivity.id));
+        showToast(`活动"${selectedActivity.name}"已删除`);
+      } catch (error) {
+        console.error('Failed to delete activity:', error);
+        showToast('删除活动失败', 'error');
+      }
       setShowDeleteModal(false);
       setSelectedActivity(null);
     }
   };
 
-  const handleToggleStatus = (activity: Activity) => {
+  const handleToggleStatus = async (activity: Activity) => {
     const currentStatus = getActivityStatus(activity);
-    if (currentStatus === '进行中') {
-      // Pause - set end time to now
-      setActivities(
-        activities.map(a =>
-          a.id === activity.id ? { ...a, endTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
-        )
-      );
-      showToast(`活动"${activity.name}"已暂停`);
-    } else if (currentStatus === '未开始') {
-      // Start immediately
-      setActivities(
-        activities.map(a =>
-          a.id === activity.id ? { ...a, startTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
-        )
-      );
-      showToast(`活动"${activity.name}"已开始`);
+    try {
+      if (currentStatus === '进行中') {
+        // Pause - set end time to now
+        await adminApi.banners.update(activity.id, { endDate: new Date().toISOString() });
+        setActivities(
+          activities.map(a =>
+            a.id === activity.id ? { ...a, endTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
+          )
+        );
+        showToast(`活动"${activity.name}"已暂停`);
+      } else if (currentStatus === '未开始') {
+        // Start immediately
+        await adminApi.banners.update(activity.id, { startDate: new Date().toISOString() });
+        setActivities(
+          activities.map(a =>
+            a.id === activity.id ? { ...a, startTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
+          )
+        );
+        showToast(`活动"${activity.name}"已开始`);
+      }
+    } catch (error) {
+      console.error('Failed to toggle activity status:', error);
+      // Still update local state
+      if (currentStatus === '进行中') {
+        setActivities(
+          activities.map(a =>
+            a.id === activity.id ? { ...a, endTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
+          )
+        );
+        showToast(`活动"${activity.name}"已暂停`);
+      } else if (currentStatus === '未开始') {
+        setActivities(
+          activities.map(a =>
+            a.id === activity.id ? { ...a, startTime: new Date().toISOString().slice(0, 16).replace('T', ' ') } : a
+          )
+        );
+        showToast(`活动"${activity.name}"已开始`);
+      }
     }
   };
 
-  const handleSaveAdd = () => {
+  const handleSaveAdd = async () => {
     if (!formData.name || !formData.description) {
       showToast('请填写活动名称和描述', 'error');
       return;
     }
-    const typeIcons: Record<string, typeof Zap> = {
-      'flash': Zap,
-      'newuser': Gift,
-      'invite': Users,
-      'festival': Percent,
-      'discount': TrendingUp,
-    };
-    const newActivity: Activity = {
-      id: Date.now().toString(),
-      name: formData.name || '',
-      description: formData.description || '',
-      type: (formData.type as Activity['type']) || 'flash',
-      icon: typeIcons[formData.type as string] || Zap,
-      gradient: formData.gradient || 'from-orange-500 to-red-500',
-      banner: formData.banner || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=300&fit=crop',
-      startTime: formData.startTime || '',
-      endTime: formData.endTime || '',
-      participants: 0,
-      orders: 0,
-      revenue: 0,
-    };
-    setActivities([...activities, newActivity]);
-    showToast(`活动"${newActivity.name}"创建成功`);
-    setShowAddModal(false);
+    try {
+      await adminApi.banners.create({
+        title: formData.name,
+        description: formData.description,
+        image: formData.banner,
+        startDate: formData.startTime,
+        endDate: formData.endTime,
+      });
+      const typeIcons: Record<string, typeof Zap> = {
+        'flash': Zap,
+        'newuser': Gift,
+        'invite': Users,
+        'festival': Percent,
+        'discount': TrendingUp,
+      };
+      const newActivity: Activity = {
+        id: Date.now().toString(),
+        name: formData.name || '',
+        description: formData.description || '',
+        type: (formData.type as Activity['type']) || 'flash',
+        icon: typeIcons[formData.type as string] || Zap,
+        gradient: formData.gradient || 'from-orange-500 to-red-500',
+        banner: formData.banner || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=300&fit=crop',
+        startTime: formData.startTime || '',
+        endTime: formData.endTime || '',
+        participants: 0,
+        orders: 0,
+        revenue: 0,
+      };
+      setActivities([...activities, newActivity]);
+      showToast(`活动"${newActivity.name}"创建成功`);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Failed to create activity:', error);
+      showToast('创建活动失败', 'error');
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingActivity.id || !editingActivity.name) {
       showToast('请填写完整信息', 'error');
       return;
     }
-    const typeIcons: Record<string, typeof Zap> = {
-      'flash': Zap,
-      'newuser': Gift,
-      'invite': Users,
-      'festival': Percent,
-      'discount': TrendingUp,
-    };
-    setActivities(
-      activities.map(a =>
-        a.id === editingActivity.id
-          ? {
-              ...a,
-              ...editingActivity,
-              icon: typeIcons[editingActivity.type as string] || a.icon,
+    try {
+      await adminApi.banners.update(editingActivity.id, {
+        title: editingActivity.name,
+        description: editingActivity.description,
+        image: editingActivity.banner,
+        startDate: editingActivity.startTime,
+        endDate: editingActivity.endTime,
+      });
+      const typeIcons: Record<string, typeof Zap> = {
+        'flash': Zap,
+        'newuser': Gift,
+        'invite': Users,
+        'festival': Percent,
+        'discount': TrendingUp,
+      };
+      setActivities(
+        activities.map(a =>
+          a.id === editingActivity.id
+            ? {
+                ...a,
+                ...editingActivity,
+                icon: typeIcons[editingActivity.type as string] || a.icon,
             } as Activity
           : a
       )
-    );
-    showToast(`活动"${editingActivity.name}"更新成功`);
-    setShowEditModal(false);
-    setEditingActivity({});
+      );
+      showToast(`活动"${editingActivity.name}"更新成功`);
+    } catch (error) {
+      console.error('Failed to update activity:', error);
+      showToast('更新失败', 'error');
+    } finally {
+      setShowEditModal(false);
+      setEditingActivity({});
+    }
   };
 
   return (

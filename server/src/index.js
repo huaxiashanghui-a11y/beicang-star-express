@@ -11,6 +11,7 @@ const addressRoutes = require('./routes/addresses');
 const couponRoutes = require('./routes/coupons');
 const notificationRoutes = require('./routes/notifications');
 const paymentRoutes = require('./routes/payments');
+const adminRoutes = require('./routes/admin');
 
 // 创建Express应用
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 分类路由（直接使用products路由）
 app.get('/api/categories', (req, res) => {

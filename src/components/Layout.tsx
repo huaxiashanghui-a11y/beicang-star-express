@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import TabBar from '@/components/TabBar'
 import Header from '@/components/Header'
-import FloatingSidebar from '@/components/FloatingSidebar'
+import FloatingWindows from '@/components/floating/FloatingWindows'
 import PageTransition from '@/components/PageTransition'
 
 export default function Layout() {
@@ -17,7 +17,7 @@ export default function Layout() {
         </PageTransition>
       </main>
       <TabBar />
-      <FloatingSidebar />
+      <FloatingWindows cartCount={3} messageCount={5} />
     </div>
   )
 }

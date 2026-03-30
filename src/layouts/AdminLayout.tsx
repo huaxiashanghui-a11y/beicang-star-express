@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import adminApi from '../config/adminApi';
 
 const menuItems = [
   { path: '/admin', icon: LayoutDashboard, label: '仪表盘', badge: null },
@@ -37,13 +38,54 @@ const menuItems = [
   { path: '/admin/points', icon: Star, label: '积分管理', badge: null },
 ];
 
+interface AdminUser {
+  id?: string;
+  name?: string;
+  username?: string;
+  role?: string;
+}
+
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [adminUser, setAdminUser] = useState<AdminUser>({});
+  const [loading, setLoading] = useState(true);
 
-  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  // 从API获取管理员信息
+  useEffect(() => {
+    loadAdminProfile();
+  }, []);
+
+  const loadAdminProfile = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        navigate('/admin/login');
+        return;
+      }
+
+      // 尝试从API获取用户信息
+      const userData = await adminApi.auth.getCurrentUser();
+      if (userData) {
+        setAdminUser(userData);
+        localStorage.setItem('adminUser', JSON.stringify(userData));
+      }
+    } catch (error) {
+      console.error('Failed to load admin profile:', error);
+      // 如果获取失败，尝试使用本地存储的数据
+      const storedUser = localStorage.getItem('adminUser');
+      if (storedUser) {
+        setAdminUser(JSON.parse(storedUser));
+      } else {
+        // 如果没有存储的用户数据，跳转到登录页
+        navigate('/admin/login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');

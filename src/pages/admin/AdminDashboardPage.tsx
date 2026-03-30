@@ -1,125 +1,202 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   TrendingDown,
   ShoppingBag,
   ShoppingCart,
   Users,
-  Ticket,
   DollarSign,
   Package,
+  RefreshCw,
 } from 'lucide-react';
-
-const stats = [
-  {
-    title: '总销售额',
-    value: '¥128,450',
-    change: '+12.5%',
-    trend: 'up',
-    icon: DollarSign,
-    color: 'from-orange-500 to-orange-600',
-  },
-  {
-    title: '今日订单',
-    value: '156',
-    change: '+8.2%',
-    trend: 'up',
-    icon: ShoppingCart,
-    color: 'from-blue-500 to-blue-600',
-  },
-  {
-    title: '商品数量',
-    value: '1,234',
-    change: '-2.1%',
-    trend: 'down',
-    icon: Package,
-    color: 'from-green-500 to-green-600',
-  },
-  {
-    title: '用户总数',
-    value: '5,678',
-    change: '+15.3%',
-    trend: 'up',
-    icon: Users,
-    color: 'from-purple-500 to-purple-600',
-  },
-];
-
-const recentOrders = [
-  {
-    id: 'ORD-2024-001',
-    user: '张伟',
-    amount: '¥2,580.00',
-    status: '已完成',
-    date: '2024-03-20 14:30',
-  },
-  {
-    id: 'ORD-2024-002',
-    user: '李娜',
-    amount: '¥1,890.00',
-    status: '处理中',
-    date: '2024-03-20 13:20',
-  },
-  {
-    id: 'ORD-2024-003',
-    user: '王强',
-    amount: '¥3,200.00',
-    status: '已发货',
-    date: '2024-03-20 11:45',
-  },
-  {
-    id: 'ORD-2024-004',
-    user: '赵敏',
-    amount: '¥890.00',
-    status: '待支付',
-    date: '2024-03-20 10:15',
-  },
-  {
-    id: 'ORD-2024-005',
-    user: '陈刚',
-    amount: '¥4,500.00',
-    status: '已完成',
-    date: '2024-03-20 09:30',
-  },
-];
-
-const topProducts = [
-  { name: 'iPhone 15 Pro Max', sales: 156, revenue: '¥156,000' },
-  { name: 'MacBook Pro 14', sales: 89, revenue: '¥133,500' },
-  { name: 'AirPods Pro 2', sales: 234, revenue: '¥46,800' },
-  { name: 'iPad Pro 12.9', sales: 67, revenue: '¥53,600' },
-  { name: 'Apple Watch S9', sales: 123, revenue: '¥61,500' },
-];
+import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
+import { useToast } from '../../components/Toast';
 
 export default function AdminDashboardPage() {
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+
+  const loadDashboardData = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      const data = await adminApi.stats.dashboard();
+
+      // 更新统计数据
+      if (data.stats) {
+        setStats([
+          {
+            title: '总销售额',
+            value: `¥${((data.stats.totalSales || 0) / 100).toLocaleString()}`,
+            change: data.stats.salesChange || '0%',
+            trend: data.stats.salesChange?.startsWith('+') ? 'up' : 'down',
+            icon: DollarSign,
+            color: 'from-orange-500 to-orange-600',
+            onClick: () => navigate('/admin/orders'),
+          },
+          {
+            title: '今日订单',
+            value: (data.stats.todayOrders || 0).toString(),
+            change: data.stats.ordersChange || '0%',
+            trend: data.stats.ordersChange?.startsWith('+') ? 'up' : 'down',
+            icon: ShoppingCart,
+            color: 'from-blue-500 to-blue-600',
+            onClick: () => navigate('/admin/orders'),
+          },
+          {
+            title: '商品数量',
+            value: (data.stats.totalProducts || 0).toString(),
+            change: data.stats.productsChange || '0%',
+            trend: data.stats.productsChange?.startsWith('+') ? 'up' : 'down',
+            icon: Package,
+            color: 'from-green-500 to-green-600',
+            onClick: () => navigate('/admin/products'),
+          },
+          {
+            title: '用户总数',
+            value: (data.stats.totalUsers || 0).toLocaleString(),
+            change: data.stats.usersChange || '0%',
+            trend: data.stats.usersChange?.startsWith('+') ? 'up' : 'down',
+            icon: Users,
+            color: 'from-purple-500 to-purple-600',
+            onClick: () => navigate('/admin/users'),
+          },
+        ]);
+      }
+
+      // 更新最近订单
+      if (data.recentOrders) {
+        setRecentOrders(data.recentOrders.slice(0, 5).map((order: any) => ({
+          id: order.id,
+          user: order.userName || order.user_name || '用户',
+          amount: `¥${((order.total || order.totalAmount || 0) / 100).toLocaleString()}`,
+          status: order.status === 'completed' ? '已完成' :
+                  order.status === 'pending' ? '待支付' :
+                  order.status === 'processing' ? '处理中' :
+                  order.status === 'shipped' ? '已发货' : '处理中',
+          date: order.createdAt || order.created_at || new Date().toISOString(),
+        })));
+      }
+
+      // 更新热销商品
+      if (data.topProducts) {
+        setTopProducts(data.topProducts.slice(0, 5).map((p: any) => ({
+          name: p.name,
+          sales: p.sales || 0,
+          revenue: `¥${(((p.price || 0) * (p.sales || 0)) / 100).toLocaleString()}`,
+        })));
+      }
+    } catch (error: any) {
+      console.error('Failed to load dashboard data:', error);
+      showToast(error.message || '加载数据失败', 'error');
+      // 使用默认数据
+      setStats([
+        { title: '总销售额', value: '¥0', change: '0%', trend: 'up', icon: DollarSign, color: 'from-orange-500 to-orange-600' },
+        { title: '今日订单', value: '0', change: '0%', trend: 'up', icon: ShoppingCart, color: 'from-blue-500 to-blue-600' },
+        { title: '商品数量', value: '0', change: '0%', trend: 'up', icon: Package, color: 'from-green-500 to-green-600' },
+        { title: '用户总数', value: '0', change: '0%', trend: 'up', icon: Users, color: 'from-purple-500 to-purple-600' },
+      ]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [navigate, showToast]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  const handleRefresh = () => {
+    loadDashboardData(true);
+  };
+
+  const defaultStats = [
+    { title: '总销售额', value: '¥0', change: '0%', trend: 'up', icon: DollarSign, color: 'from-orange-500 to-orange-600' },
+    { title: '今日订单', value: '0', change: '0%', trend: 'up', icon: ShoppingCart, color: 'from-blue-500 to-blue-600' },
+    { title: '商品数量', value: '0', change: '0%', trend: 'up', icon: Package, color: 'from-green-500 to-green-600' },
+    { title: '用户总数', value: '0', change: '0%', trend: 'up', icon: Users, color: 'from-purple-500 to-purple-600' },
+  ];
+
+  const defaultRecentOrders = [{ id: '暂无订单', user: '-', amount: '¥0', status: '-', date: '-' }];
+  const defaultTopProducts = [{ name: '暂无商品', sales: 0, revenue: '¥0' }];
+
+  const displayStats = stats.length > 0 ? stats : defaultStats;
+  const displayOrders = recentOrders.length > 0 ? recentOrders : defaultRecentOrders;
+  const displayProducts = topProducts.length > 0 ? topProducts : defaultTopProducts;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">仪表盘</h2>
+          <p className="text-gray-500 text-sm mt-1">欢迎回来！以下是今日数据概览</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleRefresh}
+          loading={refreshing}
+          loadingText="刷新中..."
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          刷新数据
+        </Button>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div key={index} className="bg-white rounded-xl shadow-sm p-6">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
               <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <div className={`flex items-center gap-1 text-sm ${
-                  stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stat.trend === 'up' ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4" />
-                  )}
-                  <span>{stat.change}</span>
-                </div>
+                <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+                <div className="w-12 h-4 bg-gray-200 rounded" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{stat.value}</h3>
-              <p className="text-gray-500 text-sm">{stat.title}</p>
+              <div className="h-8 bg-gray-200 rounded w-24 mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-16" />
             </div>
-          );
-        })}
+          ))
+        ) : (
+          displayStats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                onClick={stat.onClick}
+                className="bg-white rounded-xl shadow-sm p-6 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className={`flex items-center gap-1 text-sm font-medium ${
+                    stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {stat.trend === 'up' ? (
+                      <TrendingUp className="w-4 h-4" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4" />
+                    )}
+                    <span>{stat.change}</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">{stat.value}</h3>
+                <p className="text-gray-500 text-sm">{stat.title}</p>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Charts and Tables */}
@@ -127,11 +204,11 @@ export default function AdminDashboardPage() {
         {/* Sales Chart Placeholder */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">销售趋势</h3>
-          <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+          <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200">
             <div className="text-center">
-              <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">销售趋势图表区域</p>
-              <p className="text-sm text-gray-400">集成 Recharts 或 Chart.js</p>
+              <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-400">图表区域</p>
+              <p className="text-xs text-gray-300 mt-1">集成 Recharts 或 Chart.js</p>
             </div>
           </div>
         </div>
@@ -145,18 +222,18 @@ export default function AdminDashboardPage() {
               { name: '服装鞋包', percent: 25, color: 'bg-blue-500' },
               { name: '美妆护肤', percent: 15, color: 'bg-green-500' },
               { name: '家居生活', percent: 10, color: 'bg-purple-500' },
-              { name: '其他', percent: 5, color: 'bg-gray-500' },
+              { name: '其他', percent: 5, color: 'bg-gray-400' },
             ].map((cat, index) => (
               <div key={index}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-700">{cat.name}</span>
                   <span className="text-gray-500">{cat.percent}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-100 rounded-full h-2">
                   <div
-                    className={`${cat.color} h-2 rounded-full transition-all`}
+                    className={`${cat.color} h-2 rounded-full transition-all duration-500`}
                     style={{ width: `${cat.percent}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
             ))}
@@ -170,35 +247,56 @@ export default function AdminDashboardPage() {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">最近订单</h3>
-            <button className="text-orange-500 hover:text-orange-600 text-sm font-medium">
+            <button
+              onClick={() => navigate('/admin/orders')}
+              className="text-orange-500 hover:text-orange-600 hover:-translate-y-0.5 text-sm font-medium transition-all"
+            >
               查看全部
             </button>
           </div>
           <div className="space-y-3">
-            {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-blue-500 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-white" />
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-20" />
+                      <div className="h-3 bg-gray-100 rounded w-24" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{order.user}</p>
-                    <p className="text-xs text-gray-500">{order.id}</p>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-16" />
+                    <div className="h-3 bg-gray-100 rounded w-12" />
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-800">{order.amount}</p>
-                  <p className={`text-xs ${
-                    order.status === '已完成' ? 'text-green-600' :
-                    order.status === '处理中' ? 'text-blue-600' :
-                    order.status === '已发货' ? 'text-purple-600' :
-                    'text-orange-600'
-                  }`}>
-                    {order.status}
-                  </p>
+              ))
+            ) : (
+              displayOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate('/admin/orders')}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-blue-500 rounded-lg flex items-center justify-center">
+                      <ShoppingBag className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{order.user}</p>
+                      <p className="text-xs text-gray-500">{order.id.slice(0, 12)}...</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-800">{order.amount}</p>
+                    <p className={`text-xs ${
+                      order.status === '已完成' ? 'text-green-600' :
+                      order.status === '处理中' ? 'text-blue-600' :
+                      order.status === '已发货' ? 'text-purple-600' :
+                      'text-orange-600'
+                    }`}>
+                      {order.status}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -206,30 +304,48 @@ export default function AdminDashboardPage() {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">热销商品</h3>
-            <button className="text-orange-500 hover:text-orange-600 text-sm font-medium">
+            <button
+              onClick={() => navigate('/admin/products')}
+              className="text-orange-500 hover:text-orange-600 hover:-translate-y-0.5 text-sm font-medium transition-all"
+            >
               查看全部
             </button>
           </div>
           <div className="space-y-3">
-            {topProducts.map((product, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    index === 0 ? 'bg-orange-500 text-white' :
-                    index === 1 ? 'bg-blue-500 text-white' :
-                    index === 2 ? 'bg-green-500 text-white' :
-                    'bg-gray-500 text-white'
-                  }`}>
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{product.name}</p>
-                    <p className="text-xs text-gray-500">销量: {product.sales}</p>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-gray-200 rounded-full" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-32" />
+                      <div className="h-3 bg-gray-100 rounded w-16" />
+                    </div>
                   </div>
+                  <div className="h-4 bg-gray-200 rounded w-16" />
                 </div>
-                <p className="text-sm font-semibold text-orange-600">{product.revenue}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              displayProducts.map((product, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate('/admin/products')}>
+                  <div className="flex items-center gap-3">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      index === 0 ? 'bg-orange-500 text-white' :
+                      index === 1 ? 'bg-blue-500 text-white' :
+                      index === 2 ? 'bg-green-500 text-white' :
+                      'bg-gray-400 text-white'
+                    }`}>
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{product.name}</p>
+                      <p className="text-xs text-gray-500">销量: {product.sales}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-orange-600">{product.revenue}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

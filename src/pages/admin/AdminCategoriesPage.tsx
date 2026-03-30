@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Grid3X3, ChevronRight, X, Check, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
 
 interface Category {
   id: string;
@@ -81,8 +82,9 @@ const initialCategories: Category[] = [
 const availableIcons = ['📱', '👗', '💄', '🏠', '🍔', '⚽', '🎮', '📚', '🛋️', '🎁', '💊', '🔧'];
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -98,6 +100,28 @@ export default function AdminCategoriesPage() {
     message: '',
     type: 'success',
   });
+
+  // Load categories from API
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.categories.list();
+      if (data.categories) {
+        setCategories(data.categories);
+      } else if (Array.isArray(data)) {
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      showToast('加载分类失败', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<Category>>({
@@ -139,61 +163,85 @@ export default function AdminCategoriesPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedCategory) {
-      setCategories(categories.filter(c => c.id !== selectedCategory.id));
-      showToast(`分类"${selectedCategory.name}"已删除`);
+      try {
+        await adminApi.categories.delete(selectedCategory.id);
+        setCategories(categories.filter(c => c.id !== selectedCategory.id));
+        showToast(`分类"${selectedCategory.name}"已删除`);
+      } catch (error) {
+        console.error('Failed to delete category:', error);
+        showToast('删除分类失败', 'error');
+      }
       setShowDeleteModal(false);
       setSelectedCategory(null);
     }
   };
 
-  const handleToggleStatus = (category: Category) => {
-    setCategories(
-      categories.map(c =>
-        c.id === category.id
-          ? { ...c, status: c.status === '启用' ? '禁用' : '启用' }
-          : c
-      )
-    );
+  const handleToggleStatus = async (category: Category) => {
     const newStatus = category.status === '启用' ? '禁用' : '启用';
-    showToast(`分类"${category.name}"已${newStatus}`);
+    try {
+      await adminApi.categories.update(category.id, { status: newStatus });
+      setCategories(
+        categories.map(c =>
+          c.id === category.id
+            ? { ...c, status: newStatus as Category['status'] }
+            : c
+        )
+      );
+      showToast(`分类"${category.name}"已${newStatus}`);
+    } catch (error) {
+      console.error('Failed to toggle category status:', error);
+      showToast('操作失败', 'error');
+    }
   };
 
-  const handleSaveAdd = () => {
+  const handleSaveAdd = async () => {
     if (!formData.name) {
       showToast('请填写分类名称', 'error');
       return;
     }
-    const newCategory: Category = {
-      id: Date.now().toString(),
-      name: formData.name || '',
-      icon: formData.icon || '📱',
-      productCount: 0,
-      revenue: '¥0',
-      status: (formData.status as Category['status']) || '启用',
-      children: [],
-    };
-    setCategories([...categories, newCategory]);
-    showToast(`分类"${newCategory.name}"创建成功`);
-    setShowAddModal(false);
+    try {
+      await adminApi.categories.create(formData);
+      const newCategory: Category = {
+        id: Date.now().toString(),
+        name: formData.name || '',
+        icon: formData.icon || '📱',
+        productCount: 0,
+        revenue: '¥0',
+        status: (formData.status as Category['status']) || '启用',
+        children: [],
+      };
+      setCategories([...categories, newCategory]);
+      showToast(`分类"${newCategory.name}"创建成功`);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Failed to create category:', error);
+      showToast('创建分类失败', 'error');
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingCategory.id || !editingCategory.name) {
       showToast('请填写完整信息', 'error');
       return;
     }
-    setCategories(
-      categories.map(c =>
-        c.id === editingCategory.id
-          ? { ...c, name: editingCategory.name, icon: editingCategory.icon, status: editingCategory.status as Category['status'] }
-          : c
-      )
-    );
-    showToast(`分类"${editingCategory.name}"更新成功`);
-    setShowEditModal(false);
-    setEditingCategory({});
+    try {
+      await adminApi.categories.update(editingCategory.id, editingCategory);
+      setCategories(
+        categories.map(c =>
+          c.id === editingCategory.id
+            ? { ...c, name: editingCategory.name, icon: editingCategory.icon, status: editingCategory.status as Category['status'] }
+            : c
+        )
+      );
+      showToast(`分类"${editingCategory.name}"更新成功`);
+      setShowEditModal(false);
+      setEditingCategory({});
+    } catch (error) {
+      console.error('Failed to update category:', error);
+      showToast('更新分类失败', 'error');
+    }
   };
 
   // Calculate stats

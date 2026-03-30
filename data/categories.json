@@ -1,0 +1,58 @@
+[
+  {
+    "id": "cat-1",
+    "name": "服装",
+    "icon": "👕",
+    "image": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-2",
+    "name": "电子产品",
+    "icon": "📱",
+    "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-3",
+    "name": "家居",
+    "icon": "🏠",
+    "image": "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-4",
+    "name": "美妆",
+    "icon": "💄",
+    "image": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-5",
+    "name": "食品",
+    "icon": "🍎",
+    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-6",
+    "name": "运动",
+    "icon": "⚽",
+    "image": "https://images.unsplash.com/photo-1461896836934-fffceb5efa23?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-7",
+    "name": "母婴",
+    "icon": "👶",
+    "image": "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-8",
+    "name": "图书",
+    "icon": "📚",
+    "image": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400&h=300&fit=crop"
+  },
+  {
+    "id": "cat-8887389a",
+    "name": "�������",
+    "icon": "??",
+    "productCount": 0,
+    "createdAt": "2026-03-29T06:29:21.564Z",
+    "updatedAt": "2026-03-29T06:29:21.564Z"
+  }
+]

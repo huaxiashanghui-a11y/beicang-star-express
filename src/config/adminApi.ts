@@ -3,16 +3,24 @@
  * 管理后台API服务
  */
 
-const ADMIN_API_BASE_URL = 'http://localhost:3000/api';
+// 根据环境自动选择API基础URL
+const getApiBaseUrl = () => {
+  // 开发环境和生产环境都使用相对路径（通过代理）
+  // Vite dev server 配置了 /api 代理到 localhost:3000
+  // 生产环境由服务器配置代理
+  return '/api';
+};
+
+const ADMIN_API_BASE_URL = getApiBaseUrl();
 
 // Admin专用API封装
 const adminApi = {
   // 基础请求方法
   async request(endpoint, options = {}) {
-    const url = `${ADMIN_API_BASE_URL}${endpoint}`;
+    const url = `${ADMIN_API_BASE_URL}/admin${endpoint}`;
     const token = localStorage.getItem('adminToken');
 
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
@@ -21,21 +29,35 @@ const adminApi = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    console.log('[AdminAPI] Request:', options.method || 'GET', url, { headers });
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
       });
 
-      const data = await response.json();
+      console.log('[AdminAPI] Response status:', response.status);
 
-      if (!response.ok) {
-        throw new Error(data.error?.message || '请求失败');
+      const data = await response.json();
+      console.log('[AdminAPI] Response data:', data);
+
+      // 检查API返回的业务状态
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error?.message || data.message || `请求失败 (${response.status})`);
       }
 
-      return data;
-    } catch (error) {
-      console.error('Admin API Error:', error);
+      // 返回data字段（如果存在），否则返回整个响应
+      return data.data !== undefined ? data.data : data;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error:', error.message);
+      console.error('[AdminAPI] Error details:', error);
+
+      // 区分不同类型的错误
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('无法连接到服务器，请确保后端服务正在运行');
+      }
+
       throw error;
     }
   },
@@ -43,7 +65,7 @@ const adminApi = {
   // 管理员认证
   auth: {
     async login(username, password) {
-      return adminApi.request('/admin/login', {
+      return adminApi.request('/login', {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
@@ -55,7 +77,14 @@ const adminApi = {
     },
 
     async getCurrentUser() {
-      return adminApi.request('/admin/profile');
+      return adminApi.request('/profile');
+    },
+  },
+
+  // 仪表盘统计
+  stats: {
+    async dashboard() {
+      return adminApi.request('/stats/dashboard');
     },
   },
 
@@ -89,6 +118,13 @@ const adminApi = {
         method: 'DELETE',
       });
     },
+
+    async updateStatus(id, status) {
+      return adminApi.request(`/products/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
+    },
   },
 
   // 订单管理
@@ -102,10 +138,17 @@ const adminApi = {
       return adminApi.request(`/orders/${id}`);
     },
 
-    async updateStatus(id, status) {
+    async updateStatus(id, status, note) {
       return adminApi.request(`/orders/${id}/status`, {
         method: 'PUT',
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, note }),
+      });
+    },
+
+    async refund(id, reason) {
+      return adminApi.request(`/orders/${id}/refund`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
       });
     },
   },
@@ -114,17 +157,24 @@ const adminApi = {
   users: {
     async list(params = {}) {
       const query = new URLSearchParams(params).toString();
-      return adminApi.request(`/admin/users${query ? '?' + query : ''}`);
+      return adminApi.request(`/users${query ? '?' + query : ''}`);
     },
 
     async detail(id) {
-      return adminApi.request(`/admin/users/${id}`);
+      return adminApi.request(`/users/${id}`);
     },
 
     async update(id, data) {
-      return adminApi.request(`/admin/users/${id}`, {
+      return adminApi.request(`/users/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
+      });
+    },
+
+    async updateStatus(id, status) {
+      return adminApi.request(`/users/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
       });
     },
   },
@@ -184,19 +234,98 @@ const adminApi = {
     },
   },
 
-  // 统计概览
-  stats: {
-    async dashboard() {
-      return adminApi.request('/admin/stats/dashboard');
+  // 公告管理
+  announcements: {
+    async list() {
+      return adminApi.request('/announcements');
     },
 
-    async sales(params = {}) {
-      const query = new URLSearchParams(params).toString();
-      return adminApi.request(`/admin/stats/sales${query ? '?' + query : ''}`);
+    async create(data) {
+      return adminApi.request('/announcements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
     },
 
-    async products() {
-      return adminApi.request('/admin/stats/products');
+    async updateStatus(id, status) {
+      return adminApi.request(`/announcements/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
+    },
+
+    async delete(id) {
+      return adminApi.request(`/announcements/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // 客服工单
+  tickets: {
+    async list() {
+      return adminApi.request('/tickets');
+    },
+
+    async reply(id, content) {
+      return adminApi.request(`/tickets/${id}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+    },
+  },
+
+  // Banner管理
+  banners: {
+    async list() {
+      return adminApi.request('/banners');
+    },
+
+    async create(data) {
+      return adminApi.request('/banners', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async update(id, data) {
+      return adminApi.request(`/banners/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async delete(id) {
+      return adminApi.request(`/banners/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // 积分规则管理
+  pointsRules: {
+    async list() {
+      return adminApi.request('/points-rules');
+    },
+
+    async create(data) {
+      return adminApi.request('/points-rules', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async update(id, data) {
+      return adminApi.request(`/points-rules/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async delete(id) {
+      return adminApi.request(`/points-rules/${id}`, {
+        method: 'DELETE',
+      });
     },
   },
 };

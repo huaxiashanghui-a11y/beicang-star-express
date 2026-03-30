@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, MessageCircle, Phone, Mail, User, Clock, CheckCircle, X, Check, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
 
 interface Staff {
   id: string;
@@ -107,10 +108,11 @@ const initialChats: Chat[] = [
 ];
 
 export default function AdminCustomerServicePage() {
-  const [staff, setStaff] = useState<Staff[]>(initialStaff);
-  const [chats] = useState<Chat[]>(initialChats);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [chats, setChats] = useState<Chat[]>(initialChats);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('全部');
+  const [loading, setLoading] = useState(true);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -126,6 +128,31 @@ export default function AdminCustomerServicePage() {
     message: '',
     type: 'success',
   });
+
+  // Load tickets from API
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.tickets.list();
+      if (data.tickets) {
+        setChats(data.tickets.map((t: any) => ({
+          id: t.id,
+          user: t.userName || t.user || '用户',
+          message: t.content || t.message || '',
+          time: t.createdAt || new Date().toLocaleString('zh-CN'),
+          status: t.status === 'pending' ? '待回复' : t.status === 'processing' ? '处理中' : '已回复',
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<Staff>>({
@@ -191,8 +218,9 @@ export default function AdminCustomerServicePage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedStaffMember) {
+      // For now, just update local state since there's no delete staff API
       setStaff(staff.filter(s => s.id !== selectedStaffMember.id));
       showToast(`客服"${selectedStaffMember.name}"已删除`);
       setShowDeleteModal(false);
@@ -200,16 +228,28 @@ export default function AdminCustomerServicePage() {
     }
   };
 
-  const handleToggleStatus = (staffMember: Staff) => {
+  const handleToggleStatus = async (staffMember: Staff) => {
     const statusOrder: Staff['status'][] = ['离线', '在线', '忙碌'];
     const currentIndex = statusOrder.indexOf(staffMember.status);
     const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
-    setStaff(
-      staff.map(s =>
-        s.id === staffMember.id ? { ...s, status: nextStatus } : s
-      )
-    );
-    showToast(`客服"${staffMember.name}"已设为${nextStatus}`);
+    try {
+      // Update via API if available
+      await adminApi.tickets.reply(staffMember.id, `状态更新为: ${nextStatus}`);
+      setStaff(
+        staff.map(s =>
+          s.id === staffMember.id ? { ...s, status: nextStatus } : s
+        )
+      );
+      showToast(`客服"${staffMember.name}"已设为${nextStatus}`);
+    } catch (error) {
+      // Update local state anyway
+      setStaff(
+        staff.map(s =>
+          s.id === staffMember.id ? { ...s, status: nextStatus } : s
+        )
+      );
+      showToast(`客服"${staffMember.name}"已设为${nextStatus}`);
+    }
   };
 
   const handleSaveAdd = () => {

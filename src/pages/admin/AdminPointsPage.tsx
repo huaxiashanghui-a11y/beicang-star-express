@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Star, Gift, TrendingUp, Users, Coins, ArrowUpDown, X, Check, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
 
 interface PointsRule {
   id: string;
@@ -101,9 +102,10 @@ const initialRecords: PointsRecord[] = [
 ];
 
 export default function AdminPointsPage() {
-  const [rules, setRules] = useState<PointsRule[]>(initialRules);
+  const [rules, setRules] = useState<PointsRule[]>([]);
   const [records] = useState<PointsRecord[]>(initialRecords);
   const [activeTab, setActiveTab] = useState<'rules' | 'records' | 'products'>('rules');
+  const [loading, setLoading] = useState(true);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -119,6 +121,28 @@ export default function AdminPointsPage() {
     message: '',
     type: 'success',
   });
+
+  // Load points rules from API
+  useEffect(() => {
+    loadRules();
+  }, []);
+
+  const loadRules = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.pointsRules.list();
+      if (data.pointsRules) {
+        setRules(data.pointsRules);
+      } else if (Array.isArray(data)) {
+        setRules(data);
+      }
+    } catch (error) {
+      console.error('Failed to load points rules:', error);
+      showToast('加载积分规则失败', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<PointsRule>>({
@@ -167,64 +191,89 @@ export default function AdminPointsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedRule) {
-      setRules(rules.filter(r => r.id !== selectedRule.id));
-      showToast(`积分规则"${selectedRule.name}"已删除`);
+      try {
+        await adminApi.pointsRules.delete(selectedRule.id);
+        setRules(rules.filter(r => r.id !== selectedRule.id));
+        showToast(`积分规则"${selectedRule.name}"已删除`);
+      } catch (error) {
+        console.error('Failed to delete points rule:', error);
+        showToast('删除失败', 'error');
+      }
       setShowDeleteModal(false);
       setSelectedRule(null);
     }
   };
 
-  const handleToggleStatus = (rule: PointsRule) => {
-    setRules(
-      rules.map(r =>
-        r.id === rule.id ? { ...r, status: r.status === '启用' ? '禁用' : '启用' } : r
-      )
-    );
-    showToast(`积分规则"${rule.name}"已${rule.status === '启用' ? '禁用' : '启用'}`);
+  const handleToggleStatus = async (rule: PointsRule) => {
+    const newStatus = rule.status === '启用' ? '禁用' : '启用';
+    try {
+      await adminApi.pointsRules.update(rule.id, { status: newStatus });
+      setRules(
+        rules.map(r =>
+          r.id === rule.id ? { ...r, status: newStatus as PointsRule['status'] } : r
+        )
+      );
+      showToast(`积分规则"${rule.name}"已${newStatus}`);
+    } catch (error) {
+      console.error('Failed to toggle status:', error);
+      showToast('操作失败', 'error');
+    }
   };
 
-  const handleSaveAdd = () => {
+  const handleSaveAdd = async () => {
     if (!formData.name || !formData.points) {
       showToast('请填写规则名称和积分值', 'error');
       return;
     }
-    const newRule: PointsRule = {
-      id: Date.now().toString(),
-      name: formData.name || '',
-      description: formData.description || '',
-      type: (formData.type as PointsRule['type']) || 'earn',
-      points: formData.points || 0,
-      ratio: formData.ratio || `${formData.points}积分`,
-      status: (formData.status as PointsRule['status']) || '启用',
-      dailyLimit: formData.dailyLimit || null,
-      totalUsed: 0,
-    };
-    setRules([...rules, newRule]);
-    showToast(`积分规则"${newRule.name}"创建成功`);
-    setShowAddModal(false);
+    try {
+      await adminApi.pointsRules.create(formData);
+      const newRule: PointsRule = {
+        id: Date.now().toString(),
+        name: formData.name || '',
+        description: formData.description || '',
+        type: (formData.type as PointsRule['type']) || 'earn',
+        points: formData.points || 0,
+        ratio: formData.ratio || `${formData.points}积分`,
+        status: (formData.status as PointsRule['status']) || '启用',
+        dailyLimit: formData.dailyLimit || null,
+        totalUsed: 0,
+      };
+      setRules([...rules, newRule]);
+      showToast(`积分规则"${newRule.name}"创建成功`);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Failed to create points rule:', error);
+      showToast('创建失败', 'error');
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingRule.id || !editingRule.name) {
       showToast('请填写完整信息', 'error');
       return;
     }
-    setRules(
-      rules.map(r =>
-        r.id === editingRule.id
-          ? {
-              ...r,
-              ...editingRule,
-              ratio: editingRule.ratio || `${editingRule.points}积分`,
-            } as PointsRule
-          : r
-      )
-    );
-    showToast(`积分规则"${editingRule.name}"更新成功`);
-    setShowEditModal(false);
-    setEditingRule({});
+    try {
+      await adminApi.pointsRules.update(editingRule.id, editingRule);
+      setRules(
+        rules.map(r =>
+          r.id === editingRule.id
+            ? {
+                ...r,
+                ...editingRule,
+                ratio: editingRule.ratio || `${editingRule.points}积分`,
+              } as PointsRule
+            : r
+        )
+      );
+      showToast(`积分规则"${editingRule.name}"更新成功`);
+      setShowEditModal(false);
+      setEditingRule({});
+    } catch (error) {
+      console.error('Failed to update points rule:', error);
+      showToast('更新失败', 'error');
+    }
   };
 
   return (

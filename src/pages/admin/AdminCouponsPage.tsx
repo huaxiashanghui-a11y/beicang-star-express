@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Copy, Gift, Eye, X, Check, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import adminApi from '../../config/adminApi';
 
 interface Coupon {
   id: string;
@@ -85,7 +86,7 @@ const initialCoupons: Coupon[] = [
 ];
 
 export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [typeFilter, setTypeFilter] = useState('全部');
@@ -104,6 +105,29 @@ export default function AdminCouponsPage() {
     message: '',
     type: 'success',
   });
+  const [loading, setLoading] = useState(true);
+
+  // Load coupons from API
+  useEffect(() => {
+    loadCoupons();
+  }, []);
+
+  const loadCoupons = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.coupons.list();
+      if (data.coupons) {
+        setCoupons(data.coupons);
+      } else if (Array.isArray(data)) {
+        setCoupons(data);
+      }
+    } catch (error) {
+      console.error('Failed to load coupons:', error);
+      showToast('加载优惠券失败', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<Coupon>>({
@@ -167,57 +191,75 @@ export default function AdminCouponsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedCoupon) {
-      setCoupons(coupons.filter((c) => c.id !== selectedCoupon.id));
-      showToast(`优惠券"${selectedCoupon.name}"已删除`);
+      try {
+        await adminApi.coupons.delete(selectedCoupon.id);
+        setCoupons(coupons.filter((c) => c.id !== selectedCoupon.id));
+        showToast(`优惠券"${selectedCoupon.name}"已删除`);
+      } catch (error) {
+        console.error('Failed to delete coupon:', error);
+        showToast('删除优惠券失败', 'error');
+      }
       setShowDeleteModal(false);
       setSelectedCoupon(null);
     }
   };
 
-  const handleSaveAdd = () => {
+  const handleSaveAdd = async () => {
     if (!formData.name || !formData.discount) {
       showToast('请填写优惠券名称和优惠额度', 'error');
       return;
     }
-    const newCoupon: Coupon = {
-      id: Date.now().toString(),
-      name: formData.name || '',
-      type: formData.type as Coupon['type'] || '满减',
-      discount: formData.discount || '',
-      minAmount: formData.minAmount || 0,
-      maxDiscount: formData.maxDiscount || 0,
-      total: formData.total || 100,
-      claimed: 0,
-      startDate: formData.startDate || '',
-      endDate: formData.endDate || '',
-      status: '未开始',
-    };
-    setCoupons([...coupons, newCoupon]);
-    showToast(`优惠券"${newCoupon.name}"创建成功`);
-    setShowAddModal(false);
+    try {
+      const response = await adminApi.coupons.create(formData);
+      const newCoupon: Coupon = {
+        id: response.id || Date.now().toString(),
+        name: formData.name || '',
+        type: formData.type as Coupon['type'] || '满减',
+        discount: formData.discount || '',
+        minAmount: formData.minAmount || 0,
+        maxDiscount: formData.maxDiscount || 0,
+        total: formData.total || 100,
+        claimed: 0,
+        startDate: formData.startDate || '',
+        endDate: formData.endDate || '',
+        status: '未开始',
+      };
+      setCoupons([...coupons, newCoupon]);
+      showToast(`优惠券"${newCoupon.name}"创建成功`);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Failed to create coupon:', error);
+      showToast('创建优惠券失败', 'error');
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingCoupon.id || !editingCoupon.name || !editingCoupon.discount) {
       showToast('请填写完整信息', 'error');
       return;
     }
-    setCoupons(
-      coupons.map((c) =>
-        c.id === editingCoupon.id
-          ? {
-              ...c,
-              ...editingCoupon,
-              status: getCouponStatus(editingCoupon as Coupon),
-            }
-          : c
-      )
-    );
-    showToast(`优惠券"${editingCoupon.name}"更新成功`);
-    setShowEditModal(false);
-    setEditingCoupon({});
+    try {
+      await adminApi.coupons.update(editingCoupon.id, editingCoupon);
+      setCoupons(
+        coupons.map((c) =>
+          c.id === editingCoupon.id
+            ? {
+                ...c,
+                ...editingCoupon,
+                status: getCouponStatus(editingCoupon as Coupon),
+              }
+            : c
+        )
+      );
+      showToast(`优惠券"${editingCoupon.name}"更新成功`);
+      setShowEditModal(false);
+      setEditingCoupon({});
+    } catch (error) {
+      console.error('Failed to update coupon:', error);
+      showToast('更新优惠券失败', 'error');
+    }
   };
 
   const handleCopyCode = (id: string) => {
