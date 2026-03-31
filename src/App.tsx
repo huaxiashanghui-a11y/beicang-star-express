@@ -35,6 +35,7 @@ import AdminActivitiesPage from '@/pages/admin/AdminActivitiesPage'
 import AdminBannersPage from '@/pages/admin/AdminBannersPage'
 import AdminPointsPage from '@/pages/admin/AdminPointsPage'
 import AdminRidersPage from '@/pages/admin/AdminRidersPage'
+import AdminPermissionsPage from '@/pages/admin/AdminPermissionsPage'
 import './index.css'
 
 // Admin Route Guard
@@ -90,6 +91,7 @@ function App() {
               <Route path="banners" element={<AdminBannersPage />} />
               <Route path="points" element={<AdminPointsPage />} />
               <Route path="riders" element={<AdminRidersPage />} />
+              <Route path="permissions" element={<AdminPermissionsPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

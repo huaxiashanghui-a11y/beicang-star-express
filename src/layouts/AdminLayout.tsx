@@ -20,6 +20,7 @@ import {
   X,
   ChevronDown,
   Bike,
+  Shield,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import adminApi from '../config/adminApi';
@@ -38,6 +39,7 @@ const menuItems = [
   { path: '/admin/banners', icon: Image, label: '轮播管理', badge: null },
   { path: '/admin/points', icon: Star, label: '积分管理', badge: null },
   { path: '/admin/riders', icon: Bike, label: '骑手管理', badge: null },
+  { path: '/admin/permissions', icon: Shield, label: '权限管理', badge: null },
 ];
 
 interface AdminUser {
