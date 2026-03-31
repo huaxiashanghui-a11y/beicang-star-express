@@ -63,7 +63,7 @@ export default function AdminLayout() {
     try {
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        navigate('/admin/login');
+        setLoading(false);
         return;
       }
 
@@ -78,11 +78,13 @@ export default function AdminLayout() {
       // 如果获取失败，尝试使用本地存储的数据
       const storedUser = localStorage.getItem('adminUser');
       if (storedUser) {
-        setAdminUser(JSON.parse(storedUser));
-      } else {
-        // 如果没有存储的用户数据，跳转到登录页
-        navigate('/admin/login');
+        try {
+          setAdminUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error('Failed to parse stored user:', e);
+        }
       }
+      // 不再强制跳转，让用户看到界面
     } finally {
       setLoading(false);
     }
@@ -103,6 +105,15 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
+      {/* Loading State */}
+      {loading && (
+        <div className="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">加载中...</p>
+          </div>
+        </div>
+      )}
       {/* Sidebar */}
       <aside
         className={`${
