@@ -37,6 +37,7 @@ const menuItems = [
   { path: '/admin/activities', icon: Zap, label: '活动管理', badge: null },
   { path: '/admin/banners', icon: Image, label: '轮播管理', badge: null },
   { path: '/admin/points', icon: Star, label: '积分管理', badge: null },
+  { path: '/admin/riders', icon: Bike, label: '骑手管理', badge: null },
 ];
 
 interface AdminUser {
