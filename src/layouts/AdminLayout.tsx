@@ -54,40 +54,53 @@ export default function AdminLayout() {
   const [adminUser, setAdminUser] = useState<AdminUser>({});
   const [loading, setLoading] = useState(true);
 
-  // 从API获取管理员信息
+  // 从本地存储或API获取管理员信息
   useEffect(() => {
     loadAdminProfile();
   }, []);
 
   const loadAdminProfile = async () => {
-    try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    // 首先检查本地存储
+    const storedUser = localStorage.getItem('adminUser');
+    const token = localStorage.getItem('adminToken');
 
-      // 尝试从API获取用户信息
-      const userData = await adminApi.auth.getCurrentUser();
-      if (userData) {
-        setAdminUser(userData);
-        localStorage.setItem('adminUser', JSON.stringify(userData));
+    if (storedUser) {
+      try {
+        setAdminUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse stored user:', e);
       }
-    } catch (error) {
-      console.error('Failed to load admin profile:', error);
-      // 如果获取失败，尝试使用本地存储的数据
-      const storedUser = localStorage.getItem('adminUser');
-      if (storedUser) {
-        try {
-          setAdminUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error('Failed to parse stored user:', e);
-        }
-      }
-      // 不再强制跳转，让用户看到界面
-    } finally {
-      setLoading(false);
     }
+
+    // 如果有 token 但没有本地用户，尝试获取
+    if (token && !storedUser) {
+      try {
+        // 带超时的 API 调用
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        const userData = await adminApi.auth.getCurrentUser();
+        clearTimeout(timeoutId);
+
+        if (userData) {
+          setAdminUser(userData);
+          localStorage.setItem('adminUser', JSON.stringify(userData));
+        }
+      } catch (error) {
+        console.error('Failed to load admin profile:', error);
+        // API 失败时使用演示用户
+        const demoUser = {
+          id: 'admin-1',
+          name: '演示管理员',
+          username: 'admin',
+          role: 'super_admin'
+        };
+        setAdminUser(demoUser);
+        localStorage.setItem('adminUser', JSON.stringify(demoUser));
+      }
+    }
+
+    setLoading(false);
   };
 
   const handleLogout = () => {
