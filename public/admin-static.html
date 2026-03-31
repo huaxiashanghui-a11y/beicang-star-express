@@ -228,9 +228,8 @@
           username: 'admin'
         }));
 
-        // 显示成功面板
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminPanel').classList.add('show');
+        // 跳转到完整管理后台
+        window.location.href = '/admin-panel.html';
       } else {
         errorMsg.textContent = '用户名或密码错误（演示模式请使用 admin / 123456）';
         errorMsg.classList.add('show');
@@ -239,8 +238,7 @@
 
     // 检查是否已登录
     if (localStorage.getItem('adminToken')) {
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('adminPanel').classList.add('show');
+      window.location.href = '/admin-panel.html';
     }
   </script>
 </body>
