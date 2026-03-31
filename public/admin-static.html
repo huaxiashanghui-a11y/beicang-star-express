@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>管理后台登录</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #f97316, #3b82f6);
+      border-radius: 20px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 10px 30px rgba(249,115,22,0.3);
+    }
+    h1 {
+      text-align: center;
+      color: white;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      color: #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s;
+    }
+    input::placeholder {
+      color: #64748b;
+    }
+    input:focus {
+      border-color: #f97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.2);
+    }
+    .password-wrapper {
+      position: relative;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #f97316, #3b82f6);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.3s;
+      box-shadow: 0 10px 30px rgba(249,115,22,0.3);
+    }
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(249,115,22,0.4);
+    }
+    .login-btn:active {
+      transform: scale(0.98);
+    }
+    .error-msg {
+      background: rgba(239,68,68,0.2);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 12px;
+      color: #fca5a5;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+    .demo-box {
+      margin-top: 24px;
+      padding: 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .demo-title {
+      color: #94a3b8;
+      font-size: 12px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .demo-credentials {
+      display: flex;
+      justify-content: space-between;
+      color: #e2e8f0;
+      font-size: 14px;
+    }
+    .demo-credentials span { color: white; font-weight: 500; }
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 24px;
+    }
+    .admin-panel {
+      display: none;
+      text-align: center;
+      color: white;
+      padding: 40px;
+    }
+    .admin-panel.show { display: block; }
+    .admin-panel h2 { font-size: 24px; margin-bottom: 20px; }
+    .admin-panel p { color: #94a3b8; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <!-- 登录表单 -->
+  <div class="login-container" id="loginForm">
+    <div class="logo">⚙</div>
+    <h1>管理后台</h1>
+    <p class="subtitle">登录以继续管理您的商城</p>
+
+    <div class="error-msg" id="errorMsg">用户名或密码错误</div>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>用户名</label>
+        <input type="text" id="username" placeholder="请输入用户名" autocomplete="username" required>
+      </div>
+
+      <div class="form-group">
+        <label>密码</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password" required>
+          <button type="button" class="toggle-password" onclick="togglePassword()">👁</button>
+        </div>
+      </div>
+
+      <button type="submit" class="login-btn">登 录</button>
+    </form>
+
+    <div class="demo-box">
+      <p class="demo-title">演示账号</p>
+      <div class="demo-credentials">
+        <span>用户名: <span id="demoUser">admin</span></span>
+        <span>密码: <span id="demoPass">123456</span></span>
+      </div>
+    </div>
+
+    <p class="footer">© 2024 贝仓精选. 保留所有权利.</p>
+  </div>
+
+  <!-- 登录成功面板 -->
+  <div class="admin-panel" id="adminPanel">
+    <h2>✓ 登录成功</h2>
+    <p>欢迎回来，管理员</p>
+    <a href="/" style="color: #f97316; text-decoration: none; padding: 12px 24px; background: rgba(255,255,255,0.1); border-radius: 8px; display: inline-block;">
+      返回商城首页
+    </a>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const pwd = document.getElementById('password');
+      pwd.type = pwd.type === 'password' ? 'text' : 'password';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('errorMsg');
+
+      // 演示模式验证
+      if (username === 'admin' && password === '123456') {
+        // 保存登录状态
+        localStorage.setItem('adminToken', 'demo-' + Date.now());
+        localStorage.setItem('adminUser', JSON.stringify({
+          id: 'admin-1',
+          name: '演示管理员',
+          username: 'admin'
+        }));
+
+        // 显示成功面板
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminPanel').classList.add('show');
+      } else {
+        errorMsg.textContent = '用户名或密码错误（演示模式请使用 admin / 123456）';
+        errorMsg.classList.add('show');
+      }
+    }
+
+    // 检查是否已登录
+    if (localStorage.getItem('adminToken')) {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('adminPanel').classList.add('show');
+    }
+  </script>
+</body>
+</html>
