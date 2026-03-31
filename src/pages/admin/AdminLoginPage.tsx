@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
@@ -13,6 +13,16 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Demo mode check
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  useEffect(() => {
+    // Check if API is available, otherwise use demo mode
+    fetch('/api/health', { method: 'GET' })
+      .then(() => setIsDemoMode(false))
+      .catch(() => setIsDemoMode(true));
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -25,28 +35,63 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem('adminToken', data.data.token);
-        localStorage.setItem('adminUser', JSON.stringify(data.data.admin));
-        showToast('登录成功', 'success');
-        navigate('/admin');
+      if (isDemoMode) {
+        // Demo mode: accept any login with admin/123456
+        if (username === 'admin' && password === '123456') {
+          const demoToken = 'demo-token-' + Date.now();
+          const demoUser = {
+            id: 'admin-1',
+            username: 'admin',
+            name: '演示管理员',
+            role: 'super_admin'
+          };
+          localStorage.setItem('adminToken', demoToken);
+          localStorage.setItem('adminUser', JSON.stringify(demoUser));
+          showToast('演示模式登录成功', 'success');
+          navigate('/admin');
+        } else {
+          setError('演示模式：用户名或密码错误（请使用 admin / 123456）');
+        }
       } else {
-        setError(data.error?.message || '用户名或密码错误');
+        // Normal API mode
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          localStorage.setItem('adminToken', data.data.token);
+          localStorage.setItem('adminUser', JSON.stringify(data.data.admin));
+          showToast('登录成功', 'success');
+          navigate('/admin');
+        } else {
+          setError(data.error?.message || '用户名或密码错误');
+        }
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('登录失败，请检查网络连接');
-      showToast('登录失败，请重试', 'error');
+      // Fallback to demo mode
+      if (username === 'admin' && password === '123456') {
+        const demoToken = 'demo-token-' + Date.now();
+        const demoUser = {
+          id: 'admin-1',
+          username: 'admin',
+          name: '演示管理员',
+          role: 'super_admin'
+        };
+        localStorage.setItem('adminToken', demoToken);
+        localStorage.setItem('adminUser', JSON.stringify(demoUser));
+        showToast('演示模式登录成功', 'success');
+        navigate('/admin');
+      } else {
+        setError('登录失败，请检查网络连接');
+        showToast('登录失败，请重试', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -143,6 +188,14 @@ export default function AdminLoginPage() {
               <span>用户名: <span className="text-white">admin</span></span>
               <span>密码: <span className="text-white">123456</span></span>
             </div>
+            {isDemoMode && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <p className="text-yellow-400 text-xs text-center flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                  演示模式（离线运行）
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
