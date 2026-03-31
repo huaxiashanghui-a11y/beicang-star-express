@@ -1,188 +1,144 @@
-# 北苍星际速充 - Admin 管理后台
+# 管理后台使用手册
 
-## 📋 概述
-
-这是北苍星际速充电商应用的**管理员后台系统**，用于商家/管理员管理商品、订单、用户、优惠券等。
+> 更新时间：2026-03-31
 
 ---
 
-## 🚀 快速启动
+## 快速访问
 
-### 步骤 1：确保后端服务器正在运行
+### 在线地址
+| 类型 | 地址 |
+|------|------|
+| React 后台 | https://beicang-star-express.vercel.app/admin/login |
+| 静态备用版 | https://beicang-star-express.vercel.app/admin-static.html |
 
-```bash
-cd /d d:\beicang.js\server
-npm run dev
+### 登录信息
 ```
-
-### 步骤 2：启动前端开发服务器
-
-```bash
-cd /d d:\beicang.js
-npm run dev
-```
-
-### 步骤 3：访问 Admin 后台
-
-在浏览器中打开：
-
-```
-http://localhost:5173/admin/login
+用户名：admin
+密码：123456
 ```
 
 ---
 
-## 🔐 管理员账号
+## 功能模块一览
 
-### 超级管理员
-- **用户名**: `admin`
-- **密码**: `admin123`
-
-### 运营管理员
-- **用户名**: `manager`
-- **密码**: `manager123`
-
----
-
-## 📊 功能模块
-
-### 1. 仪表盘 `/admin`
-- 查看总销售额、今日订单、商品数量、用户总数
-- 销售趋势图表
-- 商品分类分布
+### 1. 仪表盘 (/admin)
+- 总销售额统计（带趋势变化）
+- 今日订单数量
+- 商品总数
+- 用户总数
 - 最近订单列表
 - 热销商品排行
+- 商品分类占比图
 
-### 2. 商品管理 `/admin/products`
-- 查看所有商品列表
+### 2. 商品管理 (/admin/products)
+- 商品列表展示
+- 搜索筛选
 - 添加新商品
 - 编辑商品信息
 - 删除商品
-- 上下架商品
-- 搜索和筛选商品
-- 库存管理
+- 上下架管理
+- 库存显示
 
-### 3. 订单管理 `/admin/orders`
-- 查看所有订单
-- 按状态筛选（待支付、处理中、已发货、已完成、已取消）
+### 3. 订单管理 (/admin/orders)
+- 订单统计卡片
+- 订单状态筛选（待支付/处理中/已发货/已完成）
+- 订单详情查看
 - 订单发货操作
-- 查看订单详情
-- 导出订单数据
+- 导出订单功能
 
-### 4. 用户管理 `/admin/users`
-- 查看所有注册用户
-- 搜索用户
-- 查看用户信息
-- 禁用/启用用户
-- 查看用户消费记录
+### 4. 用户管理 (/admin/users)
+- 用户统计概览
+- 用户列表
+- 用户状态管理（启用/禁用）
+- 用户详情查看
+- 导出用户数据
 
-### 5. 优惠券管理 `/admin/coupons`
-- 创建新优惠券
-- 编辑优惠券
-- 删除优惠券
-- 查看优惠券领取情况
-- 复制优惠券代码
+### 5. 优惠券 (/admin/coupons)
+- 优惠券创建
+- 优惠券列表
+- 使用规则配置
+- 发放管理
 
-### 6. 分类管理 `/admin/categories`
-- 查看所有商品分类
-- 添加新分类
-- 编辑分类
-- 启用/禁用分类
-- 查看子分类
-- 分类结构图
+### 6. 分类管理 (/admin/categories)
+- 分类列表
+- 添加/编辑分类
+- 分类图标设置
+- 子分类管理
 
----
+### 7. 支付管理 (/admin/payments)
+- 支付方式列表
+- KBZ Pay
+- Wave Pay
+- Visa / Mastercard
+- PayPal
 
-## 🎨 技术栈
+### 8. 客服管理 (/admin/customer-service)
+- 客服工单列表
+- 待处理会话
+- 回复客户
+- 历史记录
 
-- **前端框架**: React 18 + TypeScript
-- **路由**: React Router v6
-- **UI组件**: Tailwind CSS
-- **图标**: Lucide React
-- **状态管理**: React Context
+### 9. 公告管理 (/admin/announcements)
+- 公告列表
+- 发布新公告
+- 公告类型（系统/活动/商品/会员）
+- 浏览量统计
 
----
+### 10. 活动管理 (/admin/activities)
+- 活动列表
+- 创建活动
+- 活动时间设置
+- 活动数据报表
 
-## 📁 项目结构
+### 11. 轮播管理 (/admin/banners)
+- 轮播图列表
+- 添加轮播图
+- 投放时间设置
+- 点击量统计
 
-```
-d:\beicang.js\
-├── src\
-│   ├── pages\admin\
-│   │   ├── AdminLoginPage.tsx          # 登录页
-│   │   ├── AdminDashboardPage.tsx       # 仪表盘
-│   │   ├── AdminProductsPage.tsx       # 商品管理
-│   │   ├── AdminOrdersPage.tsx          # 订单管理
-│   │   ├── AdminUsersPage.tsx          # 用户管理
-│   │   ├── AdminCouponsPage.tsx        # 优惠券管理
-│   │   └── AdminCategoriesPage.tsx      # 分类管理
-│   ├── layouts\
-│   │   └── AdminLayout.tsx              # Admin布局组件
-│   └── config\
-│       └── adminApi.ts                  # Admin API配置
-└── server\                              # 后端API服务
-    └── src\
-        └── index.js                    # Express服务器
-```
+### 12. 积分管理 (/admin/points)
+- 积分规则配置
+- 积分记录查看
+- 积分商品管理
+- 总积分统计
 
----
-
-## 🔌 API 接口
-
-### 健康检查
-```bash
-GET http://localhost:3000/api/health
-```
-
-### 测试账号
-```bash
-POST http://localhost:3000/api/auth/login
-Body: {
-  "phone": "+95 9 123 4567",
-  "password": "123456"
-}
-```
+### 13. 骑手管理 (/admin/riders)
+- 骑手列表
+- 在线/离线状态
+- 今日接单统计
+- 骑手评分
+- 服务区域配置
 
 ---
 
-## 🛠️ 常见问题
+## 注意事项
 
-### Q: 无法访问 Admin 页面？
-A: 确保：
-1. 后端服务器运行在 `localhost:3000`
-2. 前端服务器运行在 `localhost:5173`
-3. 使用正确的 Admin 账号登录
+### 1. 离线模式
+当前版本前端部署在 Vercel 静态托管，**后端 API 未部署**。
+- 所有数据为本地演示数据
+- 登录使用本地验证
+- 部分数据操作仅在本地生效
 
-### Q: 登录失败？
-A: 检查是否使用了正确的管理员账号：
-- `admin` / `admin123`
-- `manager` / `manager123`
+### 2. 缓存问题
+如果页面显示空白：
+1. 按 Ctrl+Shift+R 强制刷新
+2. 或使用 Ctrl+Shift+N 打开隐身窗口访问
 
-### Q: 数据不显示？
-A: 这是模拟数据，如需真实数据需要连接真实数据库。
-
----
-
-## 📱 返回前台
-
-在 Admin 侧边栏底部点击"返回前台"即可回到用户商城。
+### 3. 备用方案
+如 React 后台无法使用，可使用静态备用版：
+- admin-static.html：登录页
+- admin-panel.html：管理面板
 
 ---
 
-## 🔒 安全说明
+## 技术信息
 
-⚠️ 当前为演示版本，生产环境需要：
-- 真实的用户认证系统
-- JWT Token 验证
-- 权限控制
-- 数据加密
-- HTTPS 加密传输
+- 前端框架：React + TypeScript + Tailwind CSS
+- 路由：React Router v7
+- 部署：Vercel
+- CI/CD：GitHub Actions
 
 ---
 
-## 📞 技术支持
-
-如有问题，请检查：
-1. Node.js 和 npm 版本
-2. 端口占用情况
-3. 控制台错误信息
+*本手册最后更新于 2026-03-31*
