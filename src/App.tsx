@@ -18,6 +18,7 @@ import SearchPage from '@/pages/SearchPage'
 import AddressPage from '@/pages/AddressPage'
 import CouponPage from '@/pages/CouponPage'
 import ActivityPage from '@/pages/ActivityPage'
+import ErrandsPage from '@/pages/ErrandsPage'
 // Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
 import AdminLayout from '@/layouts/AdminLayout'
@@ -33,6 +34,7 @@ import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage'
 import AdminActivitiesPage from '@/pages/admin/AdminActivitiesPage'
 import AdminBannersPage from '@/pages/admin/AdminBannersPage'
 import AdminPointsPage from '@/pages/admin/AdminPointsPage'
+import AdminRidersPage from '@/pages/admin/AdminRidersPage'
 import './index.css'
 
 // Admin Route Guard
@@ -64,6 +66,8 @@ function App() {
               <Route path="addresses" element={<AddressPage />} />
               <Route path="coupons" element={<CouponPage />} />
               <Route path="activity" element={<ActivityPage />} />
+              <Route path="errands" element={<ErrandsPage />} />
+              <Route path="errands/:type" element={<ErrandsPage />} />
             </Route>
 
             {/* Admin Routes */}
@@ -85,6 +89,7 @@ function App() {
               <Route path="activities" element={<AdminActivitiesPage />} />
               <Route path="banners" element={<AdminBannersPage />} />
               <Route path="points" element={<AdminPointsPage />} />
+              <Route path="riders" element={<AdminRidersPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

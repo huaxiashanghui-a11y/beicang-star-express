@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Search, ShoppingCart, User, Zap } from 'lucide-react'
+import { Home, Footprints, ShoppingCart, User, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/context/AppContext'
 
 const tabs = [
   { path: '/', icon: Home, label: '首页' },
-  { path: '/search', icon: Search, label: '搜索' },
+  { path: '/errands', icon: Footprints, label: '跑腿' },
   { path: '/activity', icon: Zap, label: '活动', isSpecial: true },
   { path: '/cart', icon: ShoppingCart, label: '购物车' },
   { path: '/profile', icon: User, label: '我的' },

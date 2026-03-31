@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react'
-import { Gift, X } from 'lucide-react'
+import { Gift, Bell, MessageCircle } from 'lucide-react'
 import { FloatingItem, FloatingPanel } from '@/components/ui/FloatingWindow'
-import { cn } from '@/lib/utils'
 import CustomerServicePanel, { CustomerServiceIcon } from './CustomerServicePanel'
 import CartPanel, { CartIcon } from './CartPanel'
 import MessagePanel, { MessageIcon } from './MessagePanel'
-import SecretaryPanel, { SecretaryIcon } from './SecretaryPanel'
+import SecretaryPanel from './SecretaryPanel'
 
 type FloatingType = 'customerService' | 'cart' | 'message' | 'secretary' | 'gift' | null
 
 interface FloatingWindowsProps {
   cartCount?: number
   messageCount?: number
+  secretaryCount?: number
 }
+
+// 商城小秘书专属图标 - 消息气泡+铃铛组合
+const SecretaryIcon = () => (
+  <div className="relative w-6 h-6">
+    <MessageCircle className="w-4 h-4 absolute left-0 top-0" />
+    <Bell className="w-4 h-4 absolute right-0 bottom-0" />
+  </div>
+)
 
 /**
  * 福利面板组件
@@ -54,7 +62,7 @@ function GiftPanel({ onClose }: { onClose: () => void }) {
  * 悬浮窗容器组件 - 统一竖立排列
  * 整合客服、购物车、福利、私信、小秘书五个悬浮窗
  */
-export default function FloatingWindows({ cartCount = 0, messageCount = 0 }: FloatingWindowsProps) {
+export default function FloatingWindows({ cartCount = 0, messageCount = 0, secretaryCount = 0 }: FloatingWindowsProps) {
   const [activePanel, setActivePanel] = useState<FloatingType>(null)
 
   // ESC 键关闭
@@ -136,11 +144,12 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0 }: Flo
           disabled={isAnyPanelOpen && activePanel !== 'message'}
         />
 
-        {/* 小秘书 */}
+        {/* 小秘书 - 商城专属白色样式 */}
         <FloatingItem
           icon={<SecretaryIcon />}
           label="小秘书"
-          color="red"
+          count={secretaryCount}
+          color="secretary"
           isOpen={activePanel === 'secretary'}
           onClick={() => handleToggle('secretary')}
           disabled={isAnyPanelOpen && activePanel !== 'secretary'}

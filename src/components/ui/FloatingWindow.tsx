@@ -6,7 +6,7 @@ interface FloatingItemProps {
   icon: ReactNode
   label: string
   count?: number
-  color?: 'green' | 'orange' | 'purple' | 'white' | 'red'
+  color?: 'green' | 'orange' | 'purple' | 'white' | 'red' | 'secretary'
   isOpen?: boolean
   onClick?: () => void
   disabled?: boolean
@@ -18,6 +18,7 @@ const colorStyles = {
   purple: 'bg-purple-500 hover:bg-purple-600',
   white: 'bg-white hover:bg-gray-50 border border-gray-200',
   red: 'bg-[#ff0000] hover:bg-red-600',
+  secretary: 'bg-white hover:bg-gray-50 border-[1px] border-gray-200', // 商城小秘书专属样式
 }
 
 const iconColors = {
@@ -26,6 +27,7 @@ const iconColors = {
   purple: 'text-white',
   white: 'text-gray-600',
   red: 'text-white',
+  secretary: 'text-[#666666]', // 商城小秘书专属图标颜色
 }
 
 /**
