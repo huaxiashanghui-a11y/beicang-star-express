@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Bike,
   Shield,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import adminApi from '../config/adminApi';
@@ -30,6 +31,7 @@ const menuItems = [
   { path: '/admin/products', icon: ShoppingBag, label: '商品管理', badge: null },
   { path: '/admin/orders', icon: ShoppingCart, label: '订单管理', badge: 5 },
   { path: '/admin/users', icon: Users, label: '用户管理', badge: null },
+  { path: '/admin/recharge', icon: Wallet, label: '充值管理', badge: null },
   { path: '/admin/coupons', icon: Ticket, label: '优惠券', badge: null },
   { path: '/admin/categories', icon: Grid3X3, label: '分类管理', badge: null },
   { path: '/admin/payments', icon: CreditCard, label: '支付管理', badge: null },
