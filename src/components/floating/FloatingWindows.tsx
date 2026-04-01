@@ -5,6 +5,7 @@ import CustomerServicePanel, { CustomerServiceIcon } from './CustomerServicePane
 import CartPanel, { CartIcon } from './CartPanel'
 import MessagePanel, { MessageIcon } from './MessagePanel'
 import SecretaryPanel from './SecretaryPanel'
+import { cn } from '@/lib/utils'
 
 type FloatingType = 'customerService' | 'cart' | 'message' | 'secretary' | 'gift' | null
 
@@ -59,11 +60,32 @@ function GiftPanel({ onClose }: { onClose: () => void }) {
 }
 
 /**
+ * 检测是否为移动设备
+ */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  return isMobile
+}
+
+/**
  * 悬浮窗容器组件 - 统一竖立排列
  * 整合客服、购物车、福利、私信、小秘书五个悬浮窗
+ * 手机端自动缩小按钮尺寸
  */
 export default function FloatingWindows({ cartCount = 0, messageCount = 0, secretaryCount = 0 }: FloatingWindowsProps) {
   const [activePanel, setActivePanel] = useState<FloatingType>(null)
+  const isMobile = useIsMobile()
+  const btnSize = isMobile ? 'sm' : 'md'  // 手机 sm(40px)，平板/桌面 md(48px)
 
   // ESC 键关闭
   useEffect(() => {
@@ -100,8 +122,11 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
 
   return (
     <>
-      {/* 悬浮按钮组 - 固定在右侧中间偏下位置，方便拇指操作 */}
-      <div className="fixed right-2 bottom-24 z-50 flex flex-col gap-3">
+      {/* 悬浮按钮组 - 手机端更小更靠边 */}
+      <div className={cn(
+        'fixed z-50 flex flex-col gap-2 sm:gap-3',
+        isMobile ? 'right-1 bottom-20' : 'right-2 bottom-24'
+      )}>
         {/* 购物车 - 最常用，放最上面 */}
         <FloatingItem
           icon={<CartIcon />}
@@ -111,6 +136,7 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
           isOpen={activePanel === 'cart'}
           onClick={() => handleToggle('cart')}
           disabled={isAnyPanelOpen && activePanel !== 'cart'}
+          size={btnSize}
         />
 
         {/* 福利 */}
@@ -121,6 +147,7 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
           isOpen={activePanel === 'gift'}
           onClick={() => handleToggle('gift')}
           disabled={isAnyPanelOpen && activePanel !== 'gift'}
+          size={btnSize}
         />
 
         {/* 私信 */}
@@ -132,6 +159,7 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
           isOpen={activePanel === 'message'}
           onClick={() => handleToggle('message')}
           disabled={isAnyPanelOpen && activePanel !== 'message'}
+          size={btnSize}
         />
 
         {/* 小秘书 - 商城专属白色样式 */}
@@ -143,6 +171,7 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
           isOpen={activePanel === 'secretary'}
           onClick={() => handleToggle('secretary')}
           disabled={isAnyPanelOpen && activePanel !== 'secretary'}
+          size={btnSize}
         />
 
         {/* 客服 */}
@@ -153,6 +182,7 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
           isOpen={activePanel === 'customerService'}
           onClick={() => handleToggle('customerService')}
           disabled={isAnyPanelOpen && activePanel !== 'customerService'}
+          size={btnSize}
         />
       </div>
 

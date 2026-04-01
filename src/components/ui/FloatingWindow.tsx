@@ -10,6 +10,7 @@ interface FloatingItemProps {
   isOpen?: boolean
   onClick?: () => void
   disabled?: boolean
+  size?: 'sm' | 'md' | 'lg'  // sm: 40px, md: 48px, lg: 56px
 }
 
 const colorStyles = {
@@ -30,11 +31,24 @@ const iconColors = {
   secretary: 'text-[#666666]', // 商城小秘书专属图标颜色
 }
 
+const sizeStyles = {
+  sm: 'w-10 h-10',      // 40px - 手机
+  md: 'w-12 h-12',      // 48px - 平板
+  lg: 'w-14 h-14',      // 56px - 桌面
+}
+
+const iconSizeStyles = {
+  sm: 'scale-75',
+  md: 'scale-90',
+  lg: 'scale-100',
+}
+
 /**
  * 单个悬浮按钮组件
  * - hover: 上浮2px + 显示文字
  * - click: 缩放95%
  * - disabled: 灰色，不可点击
+ * - 支持 sm/md/lg 三种尺寸
  */
 export function FloatingItem({
   icon,
@@ -44,6 +58,7 @@ export function FloatingItem({
   isOpen = false,
   onClick,
   disabled = false,
+  size = 'md',
 }: FloatingItemProps) {
   const [isPressed, setIsPressed] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
@@ -58,9 +73,10 @@ export function FloatingItem({
         onMouseUp={() => setIsPressed(false)}
         disabled={disabled}
         className={cn(
-          'relative w-12 h-12 rounded-full flex items-center justify-center',
+          'relative rounded-full flex items-center justify-center',
           'transition-all duration-200 ease-out',
           'shadow-lg hover:shadow-xl',
+          sizeStyles[size],
           colorStyles[color],
           isOpen && 'ring-4 ring-white ring-offset-2',
           disabled && 'opacity-50 cursor-not-allowed',
@@ -68,17 +84,18 @@ export function FloatingItem({
           !disabled && isPressed && 'scale-95',
         )}
       >
-        <span className={cn(iconColors[color], "scale-90")}>{icon}</span>
+        <span className={cn(iconColors[color], iconSizeStyles[size])}>{icon}</span>
         <CountBadge count={count} />
       </button>
 
-      {/* Tooltip */}
+      {/* Tooltip - 桌面端显示，手机端隐藏 */}
       <div
         className={cn(
           'absolute right-full mr-3 top-1/2 -translate-y-1/2',
           'px-3 py-2 bg-gray-800 text-white text-sm rounded-lg',
           'whitespace-nowrap shadow-lg',
           'transition-all duration-200',
+          'hidden md:block',
           showTooltip && !isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
         )}
       >
