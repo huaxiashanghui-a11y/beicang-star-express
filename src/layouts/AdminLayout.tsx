@@ -22,24 +22,50 @@ import {
   Bike,
   Shield,
   Wallet,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import adminApi from '../config/adminApi';
 
-const menuItems = [
+// 一级菜单配置
+interface MenuItem {
+  path: string;
+  icon: React.ElementType;
+  label: string;
+  badge?: number | null;
+}
+
+// 二级菜单配置
+interface SubMenuItem {
+  path: string;
+  label: string;
+  badge?: number | null;
+}
+
+// 财务管理组配置
+const financeGroup = {
+  mainPath: '/admin/finance',
+  icon: DollarSign,
+  label: '财务管理',
+  subMenus: [
+    { path: '/admin/recharge', label: '充值管理', badge: null },
+    { path: '/admin/payments', label: '支付管理', badge: null },
+    { path: '/admin/points', label: '积分管理', badge: null },
+  ] as SubMenuItem[],
+};
+
+// 一级菜单列表
+const menuItems: MenuItem[] = [
   { path: '/admin', icon: LayoutDashboard, label: '仪表盘', badge: null },
   { path: '/admin/products', icon: ShoppingBag, label: '商品管理', badge: null },
   { path: '/admin/orders', icon: ShoppingCart, label: '订单管理', badge: 5 },
   { path: '/admin/users', icon: Users, label: '用户管理', badge: null },
-  { path: '/admin/recharge', icon: Wallet, label: '充值管理', badge: null },
   { path: '/admin/coupons', icon: Ticket, label: '优惠券', badge: null },
   { path: '/admin/categories', icon: Grid3X3, label: '分类管理', badge: null },
-  { path: '/admin/payments', icon: CreditCard, label: '支付管理', badge: null },
   { path: '/admin/customer-service', icon: MessageCircle, label: '客服管理', badge: 3 },
   { path: '/admin/announcements', icon: Volume2, label: '公告管理', badge: null },
   { path: '/admin/activities', icon: Zap, label: '活动管理', badge: null },
   { path: '/admin/banners', icon: Image, label: '轮播管理', badge: null },
-  { path: '/admin/points', icon: Star, label: '积分管理', badge: null },
   { path: '/admin/riders', icon: Bike, label: '骑手管理', badge: null },
   { path: '/admin/permissions', icon: Shield, label: '权限管理', badge: null },
 ];
@@ -58,11 +84,21 @@ export default function AdminLayout() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUser>({});
   const [loading, setLoading] = useState(true);
+  const [financeExpanded, setFinanceExpanded] = useState(false);
 
   // 从本地存储或API获取管理员信息
   useEffect(() => {
     loadAdminProfile();
   }, []);
+
+  // 当进入财务管理子页面时，自动展开菜单
+  useEffect(() => {
+    const financePaths = financeGroup.subMenus.map(m => m.path);
+    const isFinanceActive = financePaths.some(p => location.pathname.startsWith(p));
+    if (isFinanceActive) {
+      setFinanceExpanded(true);
+    }
+  }, [location.pathname]);
 
   const loadAdminProfile = async () => {
     // 首先检查本地存储
@@ -121,6 +157,28 @@ export default function AdminLayout() {
     return location.pathname.startsWith(path);
   };
 
+  // 检查财务管理及其子菜单是否激活
+  const isFinanceActive = () => {
+    return financeGroup.subMenus.some(m => location.pathname.startsWith(m.path));
+  };
+
+  // 获取当前页面的标题
+  const getCurrentTitle = () => {
+    // 先检查财务管理的子菜单
+    const financeMenu = financeGroup.subMenus.find(m => location.pathname.startsWith(m.path));
+    if (financeMenu) {
+      return financeGroup.label;
+    }
+    // 检查其他菜单
+    const activeMenu = menuItems.find(item => isActive(item.path));
+    return activeMenu?.label || '管理后台';
+  };
+
+  const FinanceIcon = financeGroup.icon;
+
+  // 计算财务管理的总红点数
+  const totalFinanceBadge = financeGroup.subMenus.reduce((sum, m) => sum + (m.badge || 0), 0);
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Loading State */}
@@ -132,6 +190,7 @@ export default function AdminLayout() {
           </div>
         </div>
       )}
+
       {/* Sidebar */}
       <aside
         className={`${
@@ -163,6 +222,7 @@ export default function AdminLayout() {
         {/* Menu */}
         <nav className="flex-1 py-4 overflow-y-auto">
           <ul className="space-y-1 px-3">
+            {/* 常规菜单项 */}
             {menuItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -192,6 +252,64 @@ export default function AdminLayout() {
                 </li>
               );
             })}
+
+            {/* 财务管理菜单组 */}
+            <li className="pt-2">
+              <button
+                onClick={() => setFinanceExpanded(!financeExpanded)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                  isFinanceActive()
+                    ? 'bg-gradient-to-r from-orange-500 to-blue-500 text-white shadow-lg'
+                    : 'text-gray-400 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                <FinanceIcon className="w-5 h-5 flex-shrink-0" />
+                {sidebarOpen && (
+                  <>
+                    <span className="flex-1 text-left">{financeGroup.label}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        financeExpanded ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </>
+                )}
+              </button>
+
+              {/* 子菜单 */}
+              {sidebarOpen && (
+                <div
+                  className={`overflow-hidden transition-all duration-200 ease-in-out ${
+                    financeExpanded ? 'max-h-48 opacity-100 mt-1' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <ul className="space-y-1 pl-4 border-l-2 border-slate-700 ml-3">
+                    {financeGroup.subMenus.map((subMenu) => {
+                      const active = isActive(subMenu.path);
+                      return (
+                        <li key={subMenu.path}>
+                          <Link
+                            to={subMenu.path}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${
+                              active
+                                ? 'bg-orange-500/20 text-orange-400 border-l-2 border-orange-500 -ml-[2px]'
+                                : 'text-gray-400 hover:bg-slate-700 hover:text-white'
+                            }`}
+                          >
+                            <span className="flex-1">{subMenu.label}</span>
+                            {subMenu.badge && (
+                              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                {subMenu.badge}
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </li>
           </ul>
         </nav>
 
@@ -213,7 +331,7 @@ export default function AdminLayout() {
         <header className="h-16 bg-white shadow-sm border-b border-gray-200 flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-gray-800">
-              {menuItems.find((item) => isActive(item.path))?.label || '管理后台'}
+              {getCurrentTitle()}
             </h1>
           </div>
 
