@@ -18,7 +18,8 @@ export default function Header() {
         'fixed top-0 left-0 right-0 z-40 transition-all duration-300',
         isHomePage ? 'bg-white' : 'glass border-b border-border'
       )}>
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        {/* 内容自适应屏幕：小屏铺满，大屏居中限宽 */}
+        <div className="w-full px-3 sm:px-4 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto h-12 sm:h-14 flex items-center justify-between">
           {isHomePage ? (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-lg">
