@@ -34,6 +34,7 @@ type AppAction =
   | { type: 'ADD_ADDRESS'; payload: Address }
   | { type: 'UPDATE_ADDRESS'; payload: Address }
   | { type: 'DELETE_ADDRESS'; payload: string }
+  | { type: 'ADD_COUPON'; payload: Coupon }
   | { type: 'USE_COUPON'; payload: string }
   | { type: 'ADD_SEARCH_HISTORY'; payload: string }
   | { type: 'CLEAR_SEARCH_HISTORY' }
@@ -167,6 +168,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         addresses: state.addresses.filter(a => a.id !== action.payload),
+      }
+    case 'ADD_COUPON':
+      return {
+        ...state,
+        coupons: [action.payload, ...state.coupons],
       }
     case 'USE_COUPON':
       return {
