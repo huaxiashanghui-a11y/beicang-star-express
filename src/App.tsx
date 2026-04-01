@@ -37,6 +37,9 @@ import AdminPointsPage from '@/pages/admin/AdminPointsPage'
 import AdminRidersPage from '@/pages/admin/AdminRidersPage'
 import AdminPermissionsPage from '@/pages/admin/AdminPermissionsPage'
 import AdminRechargePage from '@/pages/admin/AdminRechargePage'
+import AdminSystemMessagesPage from '@/pages/admin/AdminSystemMessagesPage'
+import AdminEmailListPage from '@/pages/admin/AdminEmailListPage'
+import AdminSecretaryPage from '@/pages/admin/AdminSecretaryPage'
 import './index.css'
 
 // Admin Route Guard
@@ -92,6 +95,9 @@ function App() {
               <Route path="banners" element={<AdminBannersPage />} />
               <Route path="points" element={<AdminPointsPage />} />
               <Route path="recharge" element={<AdminRechargePage />} />
+              <Route path="system-messages" element={<AdminSystemMessagesPage />} />
+              <Route path="email-list" element={<AdminEmailListPage />} />
+              <Route path="secretary" element={<AdminSecretaryPage />} />
               <Route path="riders" element={<AdminRidersPage />} />
               <Route path="permissions" element={<AdminPermissionsPage />} />
             </Route>

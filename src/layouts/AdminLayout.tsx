@@ -23,6 +23,9 @@ import {
   Shield,
   Wallet,
   DollarSign,
+  Megaphone,
+  Mail,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import adminApi from '../config/adminApi';
@@ -44,7 +47,6 @@ interface SubMenuItem {
 
 // 财务管理组配置
 const financeGroup = {
-  mainPath: '/admin/finance',
   icon: DollarSign,
   label: '财务管理',
   subMenus: [
@@ -54,18 +56,29 @@ const financeGroup = {
   ] as SubMenuItem[],
 };
 
+// 运营管理组配置
+const operationGroup = {
+  icon: Megaphone,
+  label: '运营管理',
+  subMenus: [
+    { path: '/admin/coupons', label: '优惠券', badge: null },
+    { path: '/admin/announcements', label: '公告管理', badge: null },
+    { path: '/admin/activities', label: '活动管理', badge: null },
+    { path: '/admin/banners', label: '轮播管理', badge: null },
+    { path: '/admin/system-messages', label: '系统消息', badge: null },
+    { path: '/admin/email-list', label: '邮件列表', badge: null },
+    { path: '/admin/secretary', label: '小秘书', badge: null },
+  ] as SubMenuItem[],
+};
+
 // 一级菜单列表
 const menuItems: MenuItem[] = [
   { path: '/admin', icon: LayoutDashboard, label: '仪表盘', badge: null },
   { path: '/admin/products', icon: ShoppingBag, label: '商品管理', badge: null },
   { path: '/admin/orders', icon: ShoppingCart, label: '订单管理', badge: 5 },
   { path: '/admin/users', icon: Users, label: '用户管理', badge: null },
-  { path: '/admin/coupons', icon: Ticket, label: '优惠券', badge: null },
   { path: '/admin/categories', icon: Grid3X3, label: '分类管理', badge: null },
   { path: '/admin/customer-service', icon: MessageCircle, label: '客服管理', badge: 3 },
-  { path: '/admin/announcements', icon: Volume2, label: '公告管理', badge: null },
-  { path: '/admin/activities', icon: Zap, label: '活动管理', badge: null },
-  { path: '/admin/banners', icon: Image, label: '轮播管理', badge: null },
   { path: '/admin/riders', icon: Bike, label: '骑手管理', badge: null },
   { path: '/admin/permissions', icon: Shield, label: '权限管理', badge: null },
 ];
@@ -77,6 +90,83 @@ interface AdminUser {
   role?: string;
 }
 
+// 菜单组组件
+function MenuGroup({
+  group,
+  expanded,
+  onToggle,
+  isActive,
+  sidebarOpen
+}: {
+  group: { icon: React.ElementType; label: string; subMenus: SubMenuItem[] };
+  expanded: boolean;
+  onToggle: () => void;
+  isActive: () => boolean;
+  sidebarOpen: boolean;
+}) {
+  const location = useLocation();
+  const Icon = group.icon;
+
+  return (
+    <li className="pt-2">
+      <button
+        onClick={onToggle}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+          isActive()
+            ? 'bg-gradient-to-r from-orange-500 to-blue-500 text-white shadow-lg'
+            : 'text-gray-400 hover:bg-slate-700 hover:text-white'
+        }`}
+      >
+        <Icon className="w-5 h-5 flex-shrink-0" />
+        {sidebarOpen && (
+          <>
+            <span className="flex-1 text-left">{group.label}</span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-200 ${
+                expanded ? 'rotate-180' : ''
+              }`}
+            />
+          </>
+        )}
+      </button>
+
+      {/* 子菜单 */}
+      {sidebarOpen && (
+        <div
+          className={`overflow-hidden transition-all duration-200 ease-in-out ${
+            expanded ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <ul className="space-y-1 pl-4 border-l-2 border-slate-700 ml-3">
+            {group.subMenus.map((subMenu) => {
+              const active = location.pathname.startsWith(subMenu.path);
+              return (
+                <li key={subMenu.path}>
+                  <Link
+                    to={subMenu.path}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${
+                      active
+                        ? 'bg-orange-500/20 text-orange-400 border-l-2 border-orange-500 -ml-[2px]'
+                        : 'text-gray-400 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex-1">{subMenu.label}</span>
+                    {subMenu.badge && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        {subMenu.badge}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,6 +175,7 @@ export default function AdminLayout() {
   const [adminUser, setAdminUser] = useState<AdminUser>({});
   const [loading, setLoading] = useState(true);
   const [financeExpanded, setFinanceExpanded] = useState(false);
+  const [operationExpanded, setOperationExpanded] = useState(false);
 
   // 从本地存储或API获取管理员信息
   useEffect(() => {
@@ -97,6 +188,19 @@ export default function AdminLayout() {
     const isFinanceActive = financePaths.some(p => location.pathname.startsWith(p));
     if (isFinanceActive) {
       setFinanceExpanded(true);
+    } else {
+      setFinanceExpanded(false);
+    }
+  }, [location.pathname]);
+
+  // 当进入运营管理子页面时，自动展开菜单
+  useEffect(() => {
+    const operationPaths = operationGroup.subMenus.map(m => m.path);
+    const isOperationActive = operationPaths.some(p => location.pathname.startsWith(p));
+    if (isOperationActive) {
+      setOperationExpanded(true);
+    } else {
+      setOperationExpanded(false);
     }
   }, [location.pathname]);
 
@@ -162,6 +266,11 @@ export default function AdminLayout() {
     return financeGroup.subMenus.some(m => location.pathname.startsWith(m.path));
   };
 
+  // 检查运营管理及其子菜单是否激活
+  const isOperationActive = () => {
+    return operationGroup.subMenus.some(m => location.pathname.startsWith(m.path));
+  };
+
   // 获取当前页面的标题
   const getCurrentTitle = () => {
     // 先检查财务管理的子菜单
@@ -169,15 +278,15 @@ export default function AdminLayout() {
     if (financeMenu) {
       return financeGroup.label;
     }
+    // 检查运营管理的子菜单
+    const operationMenu = operationGroup.subMenus.find(m => location.pathname.startsWith(m.path));
+    if (operationMenu) {
+      return operationGroup.label;
+    }
     // 检查其他菜单
     const activeMenu = menuItems.find(item => isActive(item.path));
     return activeMenu?.label || '管理后台';
   };
-
-  const FinanceIcon = financeGroup.icon;
-
-  // 计算财务管理的总红点数
-  const totalFinanceBadge = financeGroup.subMenus.reduce((sum, m) => sum + (m.badge || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -254,62 +363,22 @@ export default function AdminLayout() {
             })}
 
             {/* 财务管理菜单组 */}
-            <li className="pt-2">
-              <button
-                onClick={() => setFinanceExpanded(!financeExpanded)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                  isFinanceActive()
-                    ? 'bg-gradient-to-r from-orange-500 to-blue-500 text-white shadow-lg'
-                    : 'text-gray-400 hover:bg-slate-700 hover:text-white'
-                }`}
-              >
-                <FinanceIcon className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && (
-                  <>
-                    <span className="flex-1 text-left">{financeGroup.label}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        financeExpanded ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </>
-                )}
-              </button>
+            <MenuGroup
+              group={financeGroup}
+              expanded={financeExpanded}
+              onToggle={() => setFinanceExpanded(!financeExpanded)}
+              isActive={isFinanceActive}
+              sidebarOpen={sidebarOpen}
+            />
 
-              {/* 子菜单 */}
-              {sidebarOpen && (
-                <div
-                  className={`overflow-hidden transition-all duration-200 ease-in-out ${
-                    financeExpanded ? 'max-h-48 opacity-100 mt-1' : 'max-h-0 opacity-0'
-                  }`}
-                >
-                  <ul className="space-y-1 pl-4 border-l-2 border-slate-700 ml-3">
-                    {financeGroup.subMenus.map((subMenu) => {
-                      const active = isActive(subMenu.path);
-                      return (
-                        <li key={subMenu.path}>
-                          <Link
-                            to={subMenu.path}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${
-                              active
-                                ? 'bg-orange-500/20 text-orange-400 border-l-2 border-orange-500 -ml-[2px]'
-                                : 'text-gray-400 hover:bg-slate-700 hover:text-white'
-                            }`}
-                          >
-                            <span className="flex-1">{subMenu.label}</span>
-                            {subMenu.badge && (
-                              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                {subMenu.badge}
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </li>
+            {/* 运营管理菜单组 */}
+            <MenuGroup
+              group={operationGroup}
+              expanded={operationExpanded}
+              onToggle={() => setOperationExpanded(!operationExpanded)}
+              isActive={isOperationActive}
+              sidebarOpen={sidebarOpen}
+            />
           </ul>
         </nav>
 
