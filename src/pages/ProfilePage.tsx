@@ -4,7 +4,8 @@ import {
   MapPin, Ticket, Clock, Heart, Bell, ChevronRight,
   Shield, HelpCircle, Settings, Info, MessageCircle,
   User, Edit3, Save, ShieldCheck, Truck, CreditCard,
-  Globe, Languages, Moon, Sun, Lock, Mail, Phone as PhoneIcon, MessageSquare, UserCheck
+  Globe, Languages, Moon, Sun, Lock, Mail, Phone as PhoneIcon, MessageSquare, UserCheck,
+  ShoppingBag, DollarSign
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,9 +34,10 @@ export default function ProfilePage() {
   }
 
   const serviceItems = [
-    { icon: ShieldCheck, label: '正品保障', color: 'text-green-600 bg-green-50', href: '/guarantee' },
-    { icon: Truck, label: '全球物流', color: 'text-blue-600 bg-blue-50', href: '/shipping' },
-    { icon: CreditCard, label: '安全支付', color: 'text-purple-600 bg-purple-50', href: '/payment-security' },
+    { icon: ShoppingBag, label: '代购', color: 'text-green-600 bg-green-50', href: '/shopping' },
+    { icon: Truck, label: '物流', color: 'text-blue-600 bg-blue-50', href: '/shipping' },
+    { icon: CreditCard, label: '支付方式', color: 'text-purple-600 bg-purple-50', href: '/payment' },
+    { icon: DollarSign, label: '换汇', color: 'text-orange-600 bg-orange-50', href: '/exchange' },
   ]
 
   const menuItemsRow1 = [
@@ -248,18 +250,18 @@ export default function ProfilePage() {
 
       {/* Service Icons Row */}
       <div className="mx-4 mb-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {serviceItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
               className={cn(
-                'flex items-center gap-2 p-3 rounded-xl transition-colors active:scale-95',
+                'flex flex-col items-center gap-1 p-3 rounded-xl transition-colors active:scale-95',
                 item.color
               )}
             >
               <item.icon className="w-5 h-5" />
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-xs font-medium">{item.label}</span>
             </Link>
           ))}
         </div>
