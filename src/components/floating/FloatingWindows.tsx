@@ -100,19 +100,9 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
 
   return (
     <>
-      {/* 悬浮按钮组 - 固定在右下角，竖立排列 */}
-      <div className="fixed right-4 bottom-20 z-50 flex flex-col gap-4">
-        {/* 客服 */}
-        <FloatingItem
-          icon={<CustomerServiceIcon />}
-          label="客服"
-          color="green"
-          isOpen={activePanel === 'customerService'}
-          onClick={() => handleToggle('customerService')}
-          disabled={isAnyPanelOpen && activePanel !== 'customerService'}
-        />
-
-        {/* 购物车 */}
+      {/* 悬浮按钮组 - 固定在右侧中间偏下位置，方便拇指操作 */}
+      <div className="fixed right-2 bottom-24 z-50 flex flex-col gap-3">
+        {/* 购物车 - 最常用，放最上面 */}
         <FloatingItem
           icon={<CartIcon />}
           label="购物车"
@@ -125,7 +115,7 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
 
         {/* 福利 */}
         <FloatingItem
-          icon={<Gift className="w-6 h-6" />}
+          icon={<Gift className="w-5 h-5" />}
           label="福利"
           color="purple"
           isOpen={activePanel === 'gift'}
@@ -153,6 +143,16 @@ export default function FloatingWindows({ cartCount = 0, messageCount = 0, secre
           isOpen={activePanel === 'secretary'}
           onClick={() => handleToggle('secretary')}
           disabled={isAnyPanelOpen && activePanel !== 'secretary'}
+        />
+
+        {/* 客服 */}
+        <FloatingItem
+          icon={<CustomerServiceIcon />}
+          label="客服"
+          color="green"
+          isOpen={activePanel === 'customerService'}
+          onClick={() => handleToggle('customerService')}
+          disabled={isAnyPanelOpen && activePanel !== 'customerService'}
         />
       </div>
 

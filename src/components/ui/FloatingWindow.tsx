@@ -58,17 +58,17 @@ export function FloatingItem({
         onMouseUp={() => setIsPressed(false)}
         disabled={disabled}
         className={cn(
-          'relative w-14 h-14 rounded-full flex items-center justify-center',
+          'relative w-12 h-12 rounded-full flex items-center justify-center',
           'transition-all duration-200 ease-out',
           'shadow-lg hover:shadow-xl',
           colorStyles[color],
           isOpen && 'ring-4 ring-white ring-offset-2',
           disabled && 'opacity-50 cursor-not-allowed',
-          !disabled && !isPressed && 'hover:-translate-y-0.5 hover:opacity-90',
+          !disabled && !isPressed && 'hover:opacity-90',
           !disabled && isPressed && 'scale-95',
         )}
       >
-        <span className={cn(iconColors[color])}>{icon}</span>
+        <span className={cn(iconColors[color], "scale-90")}>{icon}</span>
         <CountBadge count={count} />
       </button>
 
