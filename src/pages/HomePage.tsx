@@ -8,6 +8,7 @@ import ProductCard from '@/components/ProductCard'
 import { HomePageSkeleton } from '@/components/Skeleton'
 import Carousel from '@/components/Carousel'
 import MarqueeNotice from '@/components/MarqueeNotice'
+import SectionTitle from '@/components/SectionTitle'
 
 export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
@@ -102,45 +103,44 @@ export default function HomePage() {
         </div>
 
         {/* Categories */}
-        <div className="px-4 pb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <span className="w-1 h-5 bg-primary rounded-full" />
-              热门分类
-            </h2>
-            <Link to="/search" className="text-sm text-muted-foreground flex items-center gap-1 hover:text-primary">
-              查看更多 <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
+        <div className="px-3 sm:px-4 pb-6">
+          <SectionTitle
+            title="热门分类"
+            icon={<span className="text-base sm:text-lg">📦</span>}
+            accentColor="primary"
+            showMore
+            moreText="查看全部"
+            moreHref="/search"
+            className="mb-3"
+          />
+          <div className="grid grid-cols-4 gap-2 sm:gap-3">
             {categories.slice(0, 8).map((category) => (
               <Link
                 key={category.id}
                 to={`/category/${category.id}`}
-                className="flex flex-col items-center p-3 bg-card rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                className="flex flex-col items-center p-2 sm:p-3 bg-card rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-2xl mb-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-xl sm:text-2xl mb-1 sm:mb-2">
                   {category.icon}
                 </div>
-                <span className="text-xs font-medium">{category.name}</span>
+                <span className="text-xs font-medium text-center leading-tight">{category.name}</span>
               </Link>
             ))}
           </div>
         </div>
 
         {/* Flash Sale */}
-        <div className="px-4 pb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <span className="w-1 h-5 bg-primary rounded-full" />
-              <Flame className="w-5 h-5 text-primary" />
-              限时秒杀
-            </h2>
-            <Link to="/search?tag=flash" className="text-sm text-muted-foreground flex items-center gap-1 hover:text-primary">
-              更多 <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-3 sm:px-4 pb-6">
+          <SectionTitle
+            title="限时秒杀"
+            icon={<Flame className="w-4 h-4 sm:w-5 sm:h-5" />}
+            accentColor="orange"
+            showMore
+            moreText="更多"
+            moreHref="/search?tag=flash"
+            className="mb-3"
+          />
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {hotProducts.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} compact />
             ))}
@@ -148,18 +148,17 @@ export default function HomePage() {
         </div>
 
         {/* New Arrivals */}
-        <div className="px-4 pb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <span className="w-1 h-5 bg-secondary rounded-full" />
-              <Sparkles className="w-5 h-5 text-secondary" />
-              新品推荐
-            </h2>
-            <Link to="/search?tag=new" className="text-sm text-muted-foreground flex items-center gap-1 hover:text-secondary">
-              更多 <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-3 sm:px-4 pb-6">
+          <SectionTitle
+            title="新品推荐"
+            icon={<Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />}
+            accentColor="secondary"
+            showMore
+            moreText="更多"
+            moreHref="/search?tag=new"
+            className="mb-3"
+          />
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {newProducts.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -167,14 +166,13 @@ export default function HomePage() {
         </div>
 
         {/* Recommended For You */}
-        <div className="px-4 pb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <span className="w-1 h-5 bg-primary rounded-full" />
-              为你推荐
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-3 sm:px-4 pb-6">
+          <SectionTitle
+            title="为你推荐"
+            accentColor="primary"
+            className="mb-3"
+          />
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {recommendedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
