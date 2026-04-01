@@ -68,6 +68,7 @@ const operationGroup = {
     { path: '/admin/system-messages', label: '系统消息', badge: null },
     { path: '/admin/email-list', label: '邮件列表', badge: null },
     { path: '/admin/secretary', label: '小秘书', badge: null },
+    { path: '/admin/popup', label: '首页弹窗', badge: null },
   ] as SubMenuItem[],
 };
 

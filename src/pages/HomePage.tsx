@@ -9,6 +9,7 @@ import { HomePageSkeleton } from '@/components/Skeleton'
 import Carousel from '@/components/Carousel'
 import MarqueeNotice from '@/components/MarqueeNotice'
 import SectionTitle from '@/components/SectionTitle'
+import HomePopup from '@/components/HomePopup'
 
 export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
@@ -45,6 +46,19 @@ export default function HomePage() {
 
   return (
     <div className="bg-gradient-to-b from-primary/5 via-background to-background">
+      {/* Home Popup */}
+      <HomePopup
+        data={{
+          id: 'home-default',
+          title: '天降优惠券',
+          coupons: [
+            { amount: 1, rule: '配送费立减', link: '/category/all' },
+            { amount: 3, rule: '满30元可用', link: '/category/all' },
+          ],
+          frequency: 'once',
+        }}
+      />
+
       {/* Search Bar */}
       <div className="sticky top-14 z-30 px-4 py-3 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="relative">

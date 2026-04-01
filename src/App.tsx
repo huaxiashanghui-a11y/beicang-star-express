@@ -40,6 +40,7 @@ import AdminRechargePage from '@/pages/admin/AdminRechargePage'
 import AdminSystemMessagesPage from '@/pages/admin/AdminSystemMessagesPage'
 import AdminEmailListPage from '@/pages/admin/AdminEmailListPage'
 import AdminSecretaryPage from '@/pages/admin/AdminSecretaryPage'
+import AdminPopupPage from '@/pages/admin/AdminPopupPage'
 import './index.css'
 
 // Admin Route Guard
@@ -98,6 +99,7 @@ function App() {
               <Route path="system-messages" element={<AdminSystemMessagesPage />} />
               <Route path="email-list" element={<AdminEmailListPage />} />
               <Route path="secretary" element={<AdminSecretaryPage />} />
+              <Route path="popup" element={<AdminPopupPage />} />
               <Route path="riders" element={<AdminRidersPage />} />
               <Route path="permissions" element={<AdminPermissionsPage />} />
             </Route>
