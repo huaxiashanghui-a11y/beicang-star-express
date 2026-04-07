@@ -1,11 +1,10 @@
 import { useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   MapPin, Ticket, Clock, Heart, Bell, ChevronRight,
   Shield, HelpCircle, Settings, Info, MessageCircle,
-  User, Edit3, Save, ShieldCheck, Truck, CreditCard,
-  Globe, Languages, Moon, Sun, Lock, Mail, Phone as PhoneIcon, MessageSquare, UserCheck,
-  ShoppingBag, DollarSign
+  User, Save, ShieldCheck, Truck, CreditCard, Edit3,
+  ShoppingBag, DollarSign, Camera, Image
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,13 +16,10 @@ import { cn } from '@/lib/utils'
 export default function ProfilePage() {
   const { state, dispatch } = useApp()
   const { user, orders, notifications, coupons } = state
-  const [isEditing, setIsEditing] = useState(false)
-  const [editForm, setEditForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    avatar: user?.avatar || '',
-  })
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const [showNicknameModal, setShowNicknameModal] = useState(false)
+  const [nickname, setNickname] = useState(user?.name || '北苍星际速充')
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const orderCounts = {
@@ -57,16 +53,22 @@ export default function ProfilePage() {
   const menuItemsRow3 = [
     { icon: Settings, label: '设置', href: '/settings', badge: null },
     { icon: Info, label: '关于我们', href: '/about', badge: null },
-    { icon: Globe, label: '国家/地区', href: '/region', badge: null },
-    { icon: Languages, label: '语言', href: '/language', badge: null },
+    { icon: Bell, label: '国家/地区', href: '/region', badge: null },
+    { icon: HelpCircle, label: '语言', href: '/language', badge: null },
   ]
 
-  const handleSave = () => {
-    dispatch({
-      type: 'UPDATE_USER',
-      payload: { ...editForm }
-    })
-    setIsEditing(false)
+  const userId = user?.id || `vir-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
+  const balance = user?.balance || 0
+  const points = user?.points || 0
+
+  const handleTakePhoto = () => {
+    fileInputRef.current?.click()
+    setShowAvatarModal(false)
+  }
+
+  const handleChooseFromAlbum = () => {
+    fileInputRef.current?.click()
+    setShowAvatarModal(false)
   }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,15 +76,23 @@ export default function ProfilePage() {
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setEditForm(prev => ({ ...prev, avatar: reader.result as string }))
+        setAvatarUrl(reader.result as string)
+        dispatch({
+          type: 'UPDATE_USER',
+          payload: { avatar: reader.result as string }
+        })
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const userId = user?.id || `vir-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-  const balance = user?.balance || 0
-  const points = user?.points || 0
+  const handleSaveNickname = () => {
+    dispatch({
+      type: 'UPDATE_USER',
+      payload: { name: nickname }
+    })
+    setShowNicknameModal(false)
+  }
 
   const renderMenuGrid = (items: typeof menuItemsRow1) => (
     <div className="grid grid-cols-4 gap-2">
@@ -109,7 +119,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Profile Header - Red Theme */}
-      <div className="bg-gradient-to-r from-[#FF3B59] to-[#FF6B81] px-4 pt-8 pb-6 text-white">
+      <div className="bg-gradient-to-r from-[#FF4A6D] to-[#FF6B81] px-4 pt-8 pb-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">个人中心</h1>
           <Link to="/settings">
@@ -125,128 +135,159 @@ export default function ProfilePage() {
           <div className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl">
             <span className="text-xs opacity-80 mb-1">余额</span>
             <span className="text-2xl font-bold mb-2">{balance.toFixed(2)}</span>
-            <button className="px-4 py-1.5 rounded-full border border-white/50 text-xs hover:bg-white/20 transition-colors">
-              充值
-            </button>
+            <Link to="/recharge">
+              <button className="px-4 py-1.5 rounded-full bg-white text-[#FF4A6D] text-xs font-medium hover:bg-white/90 transition-colors">
+                充值
+              </button>
+            </Link>
           </div>
 
-          {/* Avatar & ID Section */}
-          <div className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl">
-            {isEditing ? (
-              <div className="relative">
-                <div
-                  className="w-16 h-16 rounded-xl bg-white flex items-center justify-center mb-2 shadow-lg cursor-pointer overflow-hidden"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {editForm.avatar ? (
-                    <img src={editForm.avatar} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-8 h-8 text-[#FF3B59]" />
-                  )}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-                <span className="text-xs opacity-60 mb-1">点击修改</span>
-              </div>
-            ) : (
-              <div className="relative">
-                <div className="w-16 h-16 rounded-xl bg-white flex items-center justify-center mb-2 shadow-lg">
-                  {user?.avatar || editForm.avatar ? (
-                    <img
-                      src={editForm.avatar || user?.avatar}
-                      alt={user?.name}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                  ) : (
-                    <User className="w-8 h-8 text-[#FF3B59]" />
-                  )}
-                </div>
-                <span className="text-xs opacity-60 mb-1 block text-center">点击修改</span>
-              </div>
-            )}
-            <span className="text-xs font-medium opacity-90">{userId}</span>
+          {/* Avatar & Nickname Section */}
+          <div
+            className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl cursor-pointer"
+            onClick={() => setShowAvatarModal(true)}
+          >
+            <div className="w-16 h-16 rounded-xl bg-white overflow-hidden flex items-center justify-center mb-2 shadow-lg">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-[#FF4A6D]" />
+              )}
+            </div>
+            <span
+              className="text-sm font-medium opacity-90 mb-1"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowNicknameModal(true)
+              }}
+            >
+              {nickname}
+            </span>
+            <span className="text-xs opacity-60">点击修改</span>
           </div>
 
           {/* Points Section */}
           <div className="flex-1 flex flex-col items-center justify-center p-3 bg-white/10 rounded-2xl">
             <span className="text-xs opacity-80 mb-1">积分</span>
             <span className="text-2xl font-bold mb-2">{points.toFixed(2)}</span>
-            <button className="px-4 py-1.5 rounded-full border border-white/50 text-xs hover:bg-white/20 transition-colors">
-              兑换
-            </button>
+            <Link to="/exchange">
+              <button className="px-4 py-1.5 rounded-full bg-white text-[#FF4A6D] text-xs font-medium hover:bg-white/90 transition-colors">
+                兑换
+              </button>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Edit Profile Form */}
-      {isEditing && (
-        <div className="mx-4 -mt-4">
-          <Card className="shadow-lg">
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">昵称</label>
-                <Input
-                  value={editForm.name}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="请输入昵称"
-                />
+      {/* Hidden file input for avatar */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleAvatarChange}
+      />
+
+      {/* Avatar Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowAvatarModal(false)}
+          />
+          <div className="relative w-full max-w-md bg-white rounded-t-3xl p-0 overflow-hidden animate-slide-in-up">
+            <button
+              onClick={handleTakePhoto}
+              className="w-full px-4 py-4 text-center text-base text-gray-800 hover:bg-gray-50 border-b border-gray-100"
+            >
+              拍摄
+            </button>
+            <button
+              onClick={handleChooseFromAlbum}
+              className="w-full px-4 py-4 text-center text-base text-gray-800 hover:bg-gray-50 border-b border-gray-100"
+            >
+              从相册选择
+            </button>
+            <button
+              onClick={() => setShowAvatarModal(false)}
+              className="w-full px-4 py-4 text-center text-base text-gray-500 hover:bg-gray-50"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Nickname Modal */}
+      {showNicknameModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowNicknameModal(false)}
+          />
+          <div className="relative w-full max-w-md bg-white rounded-t-3xl p-6 animate-slide-in-up">
+            <h3 className="text-lg font-bold text-center mb-4">修改昵称</h3>
+
+            {/* Avatar Preview */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center mb-2">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-gray-400" />
+                )}
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">邮箱</label>
-                <Input
-                  value={editForm.email}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="请输入邮箱"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 block">手机号</label>
-                <Input
-                  value={editForm.phone}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="请输入手机号"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
-                  取消
-                </Button>
-                <Button className="flex-1" onClick={handleSave}>
-                  <Save className="w-4 h-4 mr-1" />
-                  保存
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              <span className="text-sm text-gray-500">点击头像修改</span>
+            </div>
+
+            {/* Nickname Input */}
+            <div className="mb-6">
+              <label className="text-sm text-gray-500 mb-2 block">请输入昵称</label>
+              <Input
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="请输入昵称"
+                className="text-center border-yellow-400 focus:ring-yellow-400"
+              />
+            </div>
+
+            {/* Authorization Info */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+              <p className="font-medium text-gray-800 mb-1">授权 北苍星际速充</p>
+              <p className="text-xs text-gray-500 mb-2">授权获取以下信息为您提供更多服务</p>
+              <p className="text-xs text-gray-500">• 获取您的公开信息(昵称、头像等)</p>
+            </div>
+
+            {/* Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={handleSaveNickname}
+                className="w-full py-3 bg-yellow-400 text-gray-900 font-medium rounded-full hover:bg-yellow-500 transition-colors"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => setShowNicknameModal(false)}
+                className="w-full py-3 bg-white border border-gray-200 text-gray-500 font-medium rounded-full hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Edit Profile Button */}
-      {!isEditing && (
-        <div className="mx-4 -mt-4 mb-4">
-          <Button
-            variant="outline"
-            className="w-full h-12 rounded-xl border-white/50 text-white bg-white/10 hover:bg-white/20"
-            onClick={() => {
-              setEditForm({
-                name: user?.name || '',
-                email: user?.email || '',
-                phone: user?.phone || '',
-                avatar: user?.avatar || '',
-              })
-              setIsEditing(true)
-            }}
-          >
-            <Edit3 className="w-4 h-4 mr-2" />
-            编辑个人信息
-          </Button>
-        </div>
-      )}
+      <div className="mx-4 -mt-4 mb-4">
+        <Button
+          variant="outline"
+          className="w-full h-12 rounded-xl border-white/50 text-white bg-white/10 hover:bg-white/20"
+          onClick={() => setShowNicknameModal(true)}
+        >
+          <Edit3 className="w-4 h-4 mr-2" />
+          编辑个人信息
+        </Button>
+      </div>
 
       {/* Service Icons Row */}
       <div className="mx-4 mb-4">
