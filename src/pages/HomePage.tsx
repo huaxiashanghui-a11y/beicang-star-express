@@ -10,7 +10,7 @@ import Carousel from '@/components/Carousel'
 import MarqueeNotice from '@/components/MarqueeNotice'
 import SectionTitle from '@/components/SectionTitle'
 
-// 本地服务模块配置
+// 本地服务模块配置 - 8个独立图标模块
 const localServices = [
   { id: 'notice', title: '木姐公告', icon: '📢', color: 'bg-red-50 text-red-600', href: '/announcements' },
   { id: 'house', title: '房屋租赁', icon: '🏠', color: 'bg-blue-50 text-blue-600', href: '/housing' },
@@ -50,11 +50,11 @@ export default function HomePage() {
 
   return (
     <div className="bg-gradient-to-b from-primary/5 via-background to-background">
-      {/* 公告栏 */}
+      {/* 1. 木姐公告（跑马灯） */}
       <MarqueeNotice />
 
       <div className="max-w-lg mx-auto">
-        {/* Hero Banner - 轮播图移动到公告栏下方 */}
+        {/* 2. 轮播活动 Banner */}
         <div className="px-4 py-4">
           <div className="relative h-44 rounded-2xl overflow-hidden shadow-xl">
             {banners.map((banner, index) => (
@@ -92,7 +92,25 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 热门分类 - 移动到Banner下方 */}
+        {/* 3. 新增8个功能图标模块（独立模块） */}
+        <div className="px-3 sm:px-4 pb-6">
+          <div className="grid grid-cols-4 gap-2 sm:gap-3">
+            {localServices.map((service) => (
+              <Link
+                key={service.id}
+                to={service.href}
+                className="flex flex-col items-center p-2 sm:p-3 bg-card rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow active:scale-95"
+              >
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl mb-1 sm:mb-2 ${service.color}`}>
+                  {service.icon}
+                </div>
+                <span className="text-xs font-medium text-center leading-tight">{service.title}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. 热门分类（在新增功能下方） */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="热门分类"
@@ -119,7 +137,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 限时秒杀 */}
+        {/* 5. 限时秒杀 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="限时秒杀"
@@ -137,34 +155,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 本地服务模块 - 新增8个功能 */}
-        <div className="px-3 sm:px-4 pb-6">
-          <SectionTitle
-            title="本地服务"
-            icon={<span className="text-base sm:text-lg">🏘️</span>}
-            accentColor="primary"
-            showMore
-            moreText="更多服务"
-            moreHref="/services"
-            className="mb-3"
-          />
-          <div className="grid grid-cols-4 gap-2 sm:gap-3">
-            {localServices.map((service) => (
-              <Link
-                key={service.id}
-                to={service.href}
-                className="flex flex-col items-center p-2 sm:p-3 bg-card rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow active:scale-95"
-              >
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl mb-1 sm:mb-2 ${service.color}`}>
-                  {service.icon}
-                </div>
-                <span className="text-xs font-medium text-center leading-tight">{service.title}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* 新品推荐 */}
+        {/* 6. 新品推荐 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="新品推荐"
@@ -182,7 +173,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 为你推荐 */}
+        {/* 7. 为你推荐 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="为你推荐"
