@@ -4,7 +4,10 @@ import { Eye, EyeOff, Phone, Lock, Mail, User, CheckCircle2 } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useApp } from '@/context/AppContext'
-import { currentUser } from '@/data/mockData'
+import axios from 'axios'
+
+// API 基础URL
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1)
@@ -16,11 +19,22 @@ export default function RegisterPage() {
   const [agreed, setAgreed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const [error, setError] = useState('')
   const { dispatch } = useApp()
   const navigate = useNavigate()
 
-  const sendCode = () => {
+  const sendCode = async () => {
+    if (!phone) {
+      setError('请输入手机号')
+      return
+    }
+    setError('')
     setCountdown(60)
+    try {
+      await axios.post(`${API_BASE}/auth/send-code`, { phone })
+    } catch (err) {
+      console.error('发送验证码失败:', err)
+    }
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -35,12 +49,35 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    setTimeout(() => {
-      dispatch({ type: 'LOGIN', payload: { ...currentUser, phone } })
+    setError('')
+
+    try {
+      // 调用后端注册API
+      const response = await axios.post(`${API_BASE}/auth/register`, {
+        phone,
+        password,
+        name: `用户${phone.slice(-4)}`
+      })
+
+      if (response.data.success) {
+        const { user, token } = response.data.data
+
+        // 保存token到localStorage
+        localStorage.setItem('token', token)
+
+        // 更新AppContext
+        dispatch({ type: 'LOGIN', payload: user })
+
+        setStep(3)
+      } else {
+        setError(response.data.error?.message || '注册失败')
+      }
+    } catch (err: any) {
+      console.error('注册错误:', err)
+      setError(err.response?.data?.error?.message || '注册失败，请检查网络连接')
+    } finally {
       setIsLoading(false)
-      navigate('/')
-    }, 1000)
+    }
   }
 
   return (
@@ -53,6 +90,13 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-bold text-gradient mb-2">创建账号</h1>
         <p className="text-muted-foreground text-sm">加入北苍星际速充，尽享购物乐趣</p>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Progress Steps */}
       <div className="px-6 mb-6">
@@ -188,9 +232,9 @@ export default function RegisterPage() {
                 variant="premium"
                 size="lg"
                 className="flex-1 h-14 rounded-xl"
-                disabled={!agreed || password !== confirmPassword || password.length < 8}
+                disabled={!agreed || password !== confirmPassword || password.length < 8 || isLoading}
               >
-                完成注册
+                {isLoading ? '注册中...' : '完成注册'}
               </Button>
             </div>
           </form>

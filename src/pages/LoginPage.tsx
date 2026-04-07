@@ -4,31 +4,93 @@ import { Eye, EyeOff, Phone, Lock, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useApp } from '@/context/AppContext'
-import { currentUser } from '@/data/mockData'
+import axios from 'axios'
+
+// API 基础URL
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const { dispatch } = useApp()
   const navigate = useNavigate()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Simulate login
-    setTimeout(() => {
-      dispatch({ type: 'LOGIN', payload: currentUser })
+    setError('')
+
+    try {
+      // 调用后端登录API
+      const response = await axios.post(`${API_BASE}/auth/login`, {
+        phone,
+        password
+      })
+
+      if (response.data.success) {
+        const { user, token } = response.data.data
+
+        // 保存token到localStorage
+        localStorage.setItem('token', token)
+
+        // 更新AppContext
+        dispatch({ type: 'LOGIN', payload: user })
+
+        navigate('/')
+      } else {
+        setError(response.data.error?.message || '登录失败')
+      }
+    } catch (err: any) {
+      console.error('登录错误:', err)
+      setError(err.response?.data?.error?.message || '登录失败，请检查网络连接')
+    } finally {
       setIsLoading(false)
-      navigate('/')
-    }, 1000)
+    }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    dispatch({ type: 'LOGIN', payload: currentUser })
-    navigate('/')
+  const handleSocialLogin = async (provider: string) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      // 模拟社交登录 - 实际项目中需要调用对应的社交登录API
+      const response = await axios.post(`${API_BASE}/auth/social-login`, {
+        provider,
+        openId: `social_${provider}_${Date.now()}`,
+        name: '新用户',
+        avatar: ''
+      })
+
+      if (response.data.success) {
+        const { user, token } = response.data.data
+
+        // 保存token到localStorage
+        localStorage.setItem('token', token)
+
+        // 更新AppContext
+        dispatch({ type: 'LOGIN', payload: user })
+
+        navigate('/')
+      }
+    } catch (err) {
+      console.error('社交登录错误:', err)
+      // 社交登录失败时使用模拟登录
+      dispatch({ type: 'LOGIN', payload: {
+        id: `social-${Date.now()}`,
+        name: '社交用户',
+        phone: '',
+        email: '',
+        avatar: '',
+        balance: 0,
+        points: 0
+      }})
+      navigate('/')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -41,6 +103,13 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-gradient mb-2">欢迎回来</h1>
         <p className="text-muted-foreground">登录北苍星际速充，探索全球好物</p>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Login Form */}
       <div className="flex-1 px-6 pb-8">
@@ -55,7 +124,7 @@ export default function LoginPage() {
               className="pl-12 h-14 rounded-xl bg-white/80 backdrop-blur"
             />
           </div>
-          
+
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
             <Input

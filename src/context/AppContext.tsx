@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react'
 import { User, CartItem, Order, Notification, Address, Coupon } from '@/types'
 import { currentUser, products as initialProducts } from '@/data/mockData'
 import { getProfile } from '@/api/profile'
@@ -208,20 +208,28 @@ const AppContext = createContext<{
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // 应用启动时从后端获取最新用户数据
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
+      console.log('检测到token，正在获取用户资料...')
       getProfile()
         .then((res) => {
           if (res.success && res.data) {
+            console.log('获取用户资料成功:', res.data)
             dispatch({ type: 'SET_USER', payload: res.data })
           }
         })
-        .catch(() => {
-          // 忽略错误，保持本地状态
+        .catch((err) => {
+          console.error('获取用户资料失败:', err)
         })
+        .finally(() => {
+          setIsInitialized(true)
+        })
+    } else {
+      setIsInitialized(true)
     }
   }, [])
 
