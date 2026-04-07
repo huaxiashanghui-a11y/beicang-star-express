@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Volume2, ChevronRight } from 'lucide-react';
 
 const notices = [
@@ -12,16 +12,6 @@ const notices = [
 ];
 
 export default function MarqueeNotice() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % notices.length);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="bg-white border-b border-orange-100">
       <div className="max-w-lg mx-auto">
@@ -36,24 +26,16 @@ export default function MarqueeNotice() {
             </span>
           </div>
 
-          {/* Scrolling Notice - 左对齐，无额外间距 */}
-          <div className="flex-1 relative overflow-hidden h-10 ml-3">
-            <div
-              className="absolute inset-0 transition-transform duration-700 ease-out"
-              style={{
-                transform: `translateY(-${currentIndex * 40}px)`,
-              }}
-            >
-              {notices.map((notice, index) => (
-                <div
-                  key={index}
-                  className="h-10 flex items-center"
-                >
-                  <span className="text-sm text-gray-700 whitespace-nowrap overflow-hidden text-ellipsis pr-4 hover:text-orange-600 cursor-pointer transition-colors duration-200">
+          {/* 水平滚动公告 - 从右向左 */}
+          <div className="flex-1 relative overflow-hidden h-full ml-3">
+            <div className="marquee-container">
+              <div className="marquee-content">
+                {[...notices, ...notices].map((notice, index) => (
+                  <span key={index} className="inline-block whitespace-nowrap px-8 text-sm text-gray-700">
                     {notice}
                   </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
@@ -64,6 +46,24 @@ export default function MarqueeNotice() {
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee-container {
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .marquee-content {
+          display: inline-block;
+          animation: marquee 25s linear infinite;
+        }
+        .marquee-content:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
     </div>
   );
 }
