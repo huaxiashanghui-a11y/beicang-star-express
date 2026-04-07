@@ -78,6 +78,11 @@ export default function ProfilePage() {
     setShowAvatarModal(false)
   }
 
+  // 点击昵称弹窗中的头像触发文件选择
+  const handleAvatarInNicknameModal = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -90,28 +95,41 @@ export default function ProfilePage() {
           type: 'UPDATE_USER',
           payload: { avatar: newAvatar }
         })
-        // 同步到后端
+        // 同步到后端，确保数据持久化
         try {
-          await updateProfile({ avatar: newAvatar })
+          const res = await updateProfile({ avatar: newAvatar })
+          if (res.success) {
+            console.log('头像保存成功:', newAvatar.substring(0, 50) + '...')
+          }
         } catch (error) {
           console.error('保存头像失败:', error)
         }
       }
       reader.readAsDataURL(file)
     }
+    // 重置input值，允许重复选择同一图片
+    e.target.value = ''
   }
 
   const handleSaveNickname = async () => {
-    // 更新本地状态
-    dispatch({
-      type: 'UPDATE_USER',
-      payload: { name: nickname }
-    })
-    // 同步到后端
+    // 先同步到后端，确保数据持久化
     try {
-      await updateProfile({ name: nickname })
+      const res = await updateProfile({ name: nickname })
+      if (res.success) {
+        // API确认成功后再更新本地状态
+        dispatch({
+          type: 'UPDATE_USER',
+          payload: { name: nickname }
+        })
+        console.log('昵称保存成功:', nickname)
+      }
     } catch (error) {
       console.error('保存昵称失败:', error)
+      // API失败时仍然更新本地状态
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: { name: nickname }
+      })
     }
     setShowNicknameModal(false)
   }
@@ -201,11 +219,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Hidden file input for avatar */}
+      {/* Hidden file input for avatar - 支持移动端相机拍摄 */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={handleAvatarChange}
       />
@@ -252,7 +271,10 @@ export default function ProfilePage() {
 
             {/* Avatar Preview */}
             <div className="flex flex-col items-center mb-6">
-              <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center mb-2">
+              <div
+                className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center mb-2 cursor-pointer hover:bg-gray-200 active:scale-95 transition-all"
+                onClick={handleAvatarInNicknameModal}
+              >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
