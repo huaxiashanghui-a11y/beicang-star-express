@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input'
 import { useApp } from '@/context/AppContext'
 import axios from 'axios'
 
-// API 基础URL
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+// API 基础URL - 使用相对路径，生产环境通过vercel.json代理
+const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)

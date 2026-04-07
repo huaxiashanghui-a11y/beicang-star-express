@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// 根据环境获取API基础URL
+// 使用相对路径，在Vercel部署时会通过vercel.json代理到后端
 const getBaseURL = () => {
-  // 生产环境使用相对路径或Vercel环境变量
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  // 生产环境使用相对路径（通过vercel.json代理）
+  if (import.meta.env.PROD) {
+    return '/api';
   }
   // 开发环境使用localhost
   return 'http://localhost:3000/api';
