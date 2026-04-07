@@ -1,16 +1,14 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
-  Package, Clock, Truck, CheckCircle, XCircle, Search, Filter,
-  ShoppingBag, Repeat, Users, AlertCircle, ChevronRight, Store,
-  MoreVertical, ShoppingCart, Utensils, MapPin, Sparkles
+  Package, Clock, Truck, CheckCircle, XCircle, Search,
+  ChevronRight, MoreVertical
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useApp } from '@/context/AppContext'
-import { Order, OrderStatus, OrderType } from '@/types'
+import { Order, OrderStatus } from '@/types'
 
 // 状态配置
 const statusConfig: Record<OrderStatus, { label: string; icon: any; color: string }> = {
@@ -26,12 +24,12 @@ const statusConfig: Record<OrderStatus, { label: string; icon: any; color: strin
 }
 
 // 订单类型配置
-const orderTypeConfig: Record<string, { label: string; icon: any }> = {
-  errands: { label: '跑腿订单', icon: Users },
-  takeout: { label: '外卖订单', icon: ShoppingCart },
-  dinein: { label: '堂食订单', icon: Utensils },
-  brand: { label: '品牌订单', icon: Sparkles },
-  all: { label: '全部订单', icon: Package },
+const orderTypeConfig: Record<string, { label: string }> = {
+  errands: { label: '跑腿订单' },
+  takeout: { label: '外卖订单' },
+  dinein: { label: '堂食订单' },
+  brand: { label: '品牌订单' },
+  all: { label: '全部订单' },
 }
 
 // 订单类型下拉选项
@@ -52,7 +50,6 @@ const statusFilters = [
 
 export default function OrdersPage() {
   const { state } = useApp()
-  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const [selectedType, setSelectedType] = useState('all')
@@ -100,23 +97,10 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* 顶部导航 */}
       <div className="bg-white sticky top-0 z-30 border-b">
-        <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-bold text-gray-900">我的订单</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <MoreVertical className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
-
-        {/* 订单类型筛选 */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 h-12">
           <span className="text-sm font-medium text-gray-900">
             {orderTypeConfig[selectedType]?.label || '全部订单'}
           </span>
@@ -200,22 +184,6 @@ export default function OrdersPage() {
           <EmptyState />
         )}
       </div>
-
-      {/* 底部快捷入口 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around safe-bottom">
-        <Link to="/errands" className="flex flex-col items-center text-gray-500">
-          <Users className="w-5 h-5 mb-1" />
-          <span className="text-xs">跑腿</span>
-        </Link>
-        <Link to="/exchange" className="flex flex-col items-center text-gray-500">
-          <Repeat className="w-5 h-5 mb-1" />
-          <span className="text-xs">换汇</span>
-        </Link>
-        <Link to="/" className="flex flex-col items-center text-gray-500">
-          <Store className="w-5 h-5 mb-1" />
-          <span className="text-xs">商城</span>
-        </Link>
-      </div>
     </div>
   )
 }
@@ -265,7 +233,6 @@ function OrderCard({
   formatPrice: (price: number) => string
 }) {
   const config = statusConfig[order.status]
-  const StatusIcon = config.icon
 
   return (
     <Link to={`/order/${order.id}`}>
