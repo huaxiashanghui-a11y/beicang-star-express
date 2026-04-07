@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Footprints, ShoppingCart, User, Zap } from 'lucide-react'
+import { Home, Footprints, ShoppingCart, User, Zap, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/context/AppContext'
 
@@ -7,14 +7,14 @@ const tabs = [
   { path: '/', icon: Home, label: '首页' },
   { path: '/errands', icon: Footprints, label: '跑腿' },
   { path: '/activity', icon: Zap, label: '活动', isSpecial: true },
-  { path: '/cart', icon: ShoppingCart, label: '购物车' },
+  { path: '/orders', icon: ClipboardList, label: '订单' },
   { path: '/profile', icon: User, label: '我的' },
 ]
 
 export default function TabBar() {
   const location = useLocation()
   const { state } = useApp()
-  const cartCount = state.cart.reduce((sum, item) => sum + (item.selected ? item.quantity : 0), 0)
+  const pendingOrdersCount = state.orders.filter(o => ['pending', 'paid', 'processing', 'shipped'].includes(o.status)).length
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border safe-bottom">
@@ -22,7 +22,7 @@ export default function TabBar() {
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path
           const Icon = tab.icon
-          const showBadge = tab.path === '/cart' && cartCount > 0
+          const showBadge = tab.path === '/orders' && pendingOrdersCount > 0
           const isSpecial = tab.isSpecial
 
           return (
@@ -50,7 +50,7 @@ export default function TabBar() {
                     <Icon className={cn('w-6 h-6 transition-transform', isActive && 'scale-110')} />
                     {showBadge && (
                       <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center animate-bounce-in">
-                        {cartCount > 9 ? '9+' : cartCount}
+                        {pendingOrdersCount > 9 ? '9+' : pendingOrdersCount}
                       </span>
                     )}
                   </div>
