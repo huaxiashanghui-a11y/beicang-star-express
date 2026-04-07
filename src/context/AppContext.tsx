@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 import { User, CartItem, Order, Notification, Address, Coupon } from '@/types'
 import { currentUser, products as initialProducts } from '@/data/mockData'
+import { getProfile } from '@/api/profile'
 
 interface AppState {
   user: User | null
@@ -41,8 +42,8 @@ type AppAction =
   | { type: 'SET_ROUTE'; payload: string }
 
 const initialState: AppState = {
-  user: currentUser,
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   cart: [],
   orders: [],
   notifications: [],
@@ -207,6 +208,22 @@ const AppContext = createContext<{
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+
+  // 应用启动时从后端获取最新用户数据
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      getProfile()
+        .then((res) => {
+          if (res.success && res.data) {
+            dispatch({ type: 'SET_USER', payload: res.data })
+          }
+        })
+        .catch(() => {
+          // 忽略错误，保持本地状态
+        })
+    }
+  }, [])
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

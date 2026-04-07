@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   MapPin, Ticket, Clock, Heart, Bell, ChevronRight,
@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useApp } from '@/context/AppContext'
 import { cn } from '@/lib/utils'
+import { updateProfile } from '@/api/profile'
 
 export default function ProfilePage() {
   const { state, dispatch } = useApp()
@@ -21,6 +22,12 @@ export default function ProfilePage() {
   const [nickname, setNickname] = useState(user?.name || '北苍星际速充')
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 同步用户数据到本地状态
+  useEffect(() => {
+    if (user?.name) setNickname(user.name)
+    if (user?.avatar) setAvatarUrl(user.avatar)
+  }, [user?.name, user?.avatar])
 
   const orderCounts = {
     pending: orders.filter(o => o.status === 'pending').length,
@@ -71,26 +78,41 @@ export default function ProfilePage() {
     setShowAvatarModal(false)
   }
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string)
+      reader.onloadend = async () => {
+        const newAvatar = reader.result as string
+        setAvatarUrl(newAvatar)
+        // 更新本地状态
         dispatch({
           type: 'UPDATE_USER',
-          payload: { avatar: reader.result as string }
+          payload: { avatar: newAvatar }
         })
+        // 同步到后端
+        try {
+          await updateProfile({ avatar: newAvatar })
+        } catch (error) {
+          console.error('保存头像失败:', error)
+        }
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleSaveNickname = () => {
+  const handleSaveNickname = async () => {
+    // 更新本地状态
     dispatch({
       type: 'UPDATE_USER',
       payload: { name: nickname }
     })
+    // 同步到后端
+    try {
+      await updateProfile({ name: nickname })
+    } catch (error) {
+      console.error('保存昵称失败:', error)
+    }
     setShowNicknameModal(false)
   }
 
@@ -276,18 +298,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
-      {/* Edit Profile Button */}
-      <div className="mx-4 -mt-4 mb-4">
-        <Button
-          variant="outline"
-          className="w-full h-12 rounded-xl border-white/50 text-white bg-white/10 hover:bg-white/20"
-          onClick={() => setShowNicknameModal(true)}
-        >
-          <Edit3 className="w-4 h-4 mr-2" />
-          编辑个人信息
-        </Button>
-      </div>
 
       {/* Service Icons Row */}
       <div className="mx-4 mb-4">
