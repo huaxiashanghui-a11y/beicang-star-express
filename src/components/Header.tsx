@@ -1,16 +1,26 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Bell, ChevronLeft, MessageCircle, User, Phone, HelpCircle, FileText } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Bell, ChevronLeft, MessageCircle, User, Phone, HelpCircle, FileText, Search } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
 export default function Header() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { state } = useApp()
   const unreadCount = state.notifications.filter(n => !n.isRead).length
   const isHomePage = location.pathname === '/'
   const [showContactModal, setShowContactModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
+    }
+  }
 
   return (
     <>
@@ -19,66 +29,89 @@ export default function Header() {
         isHomePage ? 'bg-white' : 'glass border-b border-border'
       )}>
         {/* 内容自适应屏幕：小屏铺满，大屏居中限宽 */}
-        <div className="w-full px-3 sm:px-4 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto h-12 sm:h-14 flex items-center justify-between">
+        <div className="w-full px-3 sm:px-4 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto">
           {isHomePage ? (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">BC</span>
+            // 首页顶部：Logo + 搜索框 + 头像
+            <div className="h-14 flex items-center gap-3">
+              {/* Logo区域 */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">BC</span>
+                </div>
+                <div className="hidden sm:block">
+                  <h1 className="text-base font-bold text-gradient leading-tight">北苍星际速充</h1>
+                  <p className="text-[9px] text-muted-foreground -mt-0.5">全球好物 一键速达</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-bold text-gradient">北苍星际速充</h1>
-                <p className="text-[10px] text-muted-foreground">全球好物 一键速达</p>
+
+              {/* 搜索框 */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="search"
+                  placeholder="搜索商品..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="h-9 pl-9 pr-4 rounded-full bg-gray-100 text-sm"
+                />
+              </div>
+
+              {/* 右侧图标 */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="touch-target relative"
+                  onClick={() => setShowContactModal(true)}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </Button>
+                <Link to="/profile">
+                  <Button variant="ghost" size="icon-sm" className="touch-target">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </Link>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              {location.pathname !== '/login' && location.pathname !== '/register' && (
-                <Link to={location.pathname.includes('/product/') ? '/search' : -1 as any}>
-                  <Button variant="ghost" size="icon-sm" className="touch-target">
-                    <ChevronLeft className="w-5 h-5" />
+            // 非首页顶部
+            <div className="h-12 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {location.pathname !== '/login' && location.pathname !== '/register' && (
+                  <Link to={location.pathname.includes('/product/') ? '/search' : -1 as any}>
+                    <Button variant="ghost" size="icon-sm" className="touch-target">
+                      <ChevronLeft className="w-5 h-5" />
+                    </Button>
+                  </Link>
+                )}
+                <h1 className="text-base font-semibold">
+                  {getPageTitle(location.pathname)}
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="touch-target relative"
+                  onClick={() => setShowContactModal(true)}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </Button>
+                <Link to="/notifications">
+                  <Button variant="ghost" size="icon-sm" className="touch-target relative">
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </Link>
-              )}
-              <h1 className="text-base font-semibold">
-                {getPageTitle(location.pathname)}
-              </h1>
+              </div>
             </div>
           )}
-
-          <div className="flex items-center gap-1">
-            {/* Customer Service Icon */}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="touch-target relative"
-              onClick={() => setShowContactModal(true)}
-            >
-              <MessageCircle className="w-5 h-5" />
-            </Button>
-
-            {/* Notifications Bell - Only on non-home pages */}
-            {!isHomePage && (
-              <Link to="/notifications">
-                <Button variant="ghost" size="icon-sm" className="touch-target relative">
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-            )}
-
-            {/* Profile Icon - Only on home page */}
-            {isHomePage && (
-              <Link to="/profile">
-                <Button variant="ghost" size="icon-sm" className="touch-target">
-                  <User className="w-5 h-5" />
-                </Button>
-              </Link>
-            )}
-          </div>
         </div>
       </header>
 

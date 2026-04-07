@@ -9,11 +9,21 @@ import { HomePageSkeleton } from '@/components/Skeleton'
 import Carousel from '@/components/Carousel'
 import MarqueeNotice from '@/components/MarqueeNotice'
 import SectionTitle from '@/components/SectionTitle'
-import HomePopup from '@/components/HomePopup'
+
+// 本地服务模块配置
+const localServices = [
+  { id: 'notice', title: '木姐公告', icon: '📢', color: 'bg-red-50 text-red-600', href: '/announcements' },
+  { id: 'house', title: '房屋租赁', icon: '🏠', color: 'bg-blue-50 text-blue-600', href: '/housing' },
+  { id: 'secondhand', title: '二手信息', icon: '🔄', color: 'bg-purple-50 text-purple-600', href: '/secondhand' },
+  { id: 'exchange', title: '换汇', icon: '💱', color: 'bg-green-50 text-green-600', href: '/exchange' },
+  { id: 'food', title: '美食', icon: '🍜', color: 'bg-orange-50 text-orange-600', href: '/food' },
+  { id: 'visa', title: '签证', icon: '📋', color: 'bg-cyan-50 text-cyan-600', href: '/visa' },
+  { id: 'entertainment', title: '娱乐', icon: '🎉', color: 'bg-pink-50 text-pink-600', href: '/entertainment' },
+  { id: 'car', title: '汽修', icon: '🚗', color: 'bg-gray-50 text-gray-600', href: '/car' },
+]
 
 export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
-  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const { state } = useApp()
@@ -34,51 +44,17 @@ export default function HomePage() {
   const recommendedProducts = products.slice(0, 8)
   const newProducts = products.filter(p => p.isNew)
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
-    }
-  }
-
   if (loading) {
     return <HomePageSkeleton />
   }
 
   return (
     <div className="bg-gradient-to-b from-primary/5 via-background to-background">
-      {/* Home Popup */}
-      <HomePopup
-        data={{
-          id: 'home-default',
-          title: '天降优惠券',
-          coupons: [
-            { amount: 1, rule: '配送费立减', link: '/category/all' },
-            { amount: 3, rule: '满30元可用', link: '/category/all' },
-          ],
-          frequency: 'once',
-        }}
-      />
-
-      {/* Search Bar */}
-      <div className="sticky top-14 z-30 px-4 py-3 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="搜索商品..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="pl-12 h-12 rounded-xl bg-muted/50"
-          />
-        </div>
-      </div>
-
-      {/* Marquee Notice */}
+      {/* 公告栏 */}
       <MarqueeNotice />
 
       <div className="max-w-lg mx-auto">
-        {/* Hero Banner */}
+        {/* Hero Banner - 轮播图移动到公告栏下方 */}
         <div className="px-4 py-4">
           <div className="relative h-44 rounded-2xl overflow-hidden shadow-xl">
             {banners.map((banner, index) => (
@@ -116,7 +92,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* 热门分类 - 移动到Banner下方 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="热门分类"
@@ -143,7 +119,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Flash Sale */}
+        {/* 限时秒杀 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="限时秒杀"
@@ -161,7 +137,34 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* New Arrivals */}
+        {/* 本地服务模块 - 新增8个功能 */}
+        <div className="px-3 sm:px-4 pb-6">
+          <SectionTitle
+            title="本地服务"
+            icon={<span className="text-base sm:text-lg">🏘️</span>}
+            accentColor="primary"
+            showMore
+            moreText="更多服务"
+            moreHref="/services"
+            className="mb-3"
+          />
+          <div className="grid grid-cols-4 gap-2 sm:gap-3">
+            {localServices.map((service) => (
+              <Link
+                key={service.id}
+                to={service.href}
+                className="flex flex-col items-center p-2 sm:p-3 bg-card rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow active:scale-95"
+              >
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl mb-1 sm:mb-2 ${service.color}`}>
+                  {service.icon}
+                </div>
+                <span className="text-xs font-medium text-center leading-tight">{service.title}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* 新品推荐 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="新品推荐"
@@ -179,7 +182,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Recommended For You */}
+        {/* 为你推荐 */}
         <div className="px-3 sm:px-4 pb-6">
           <SectionTitle
             title="为你推荐"

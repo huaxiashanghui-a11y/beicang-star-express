@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Volume2, ChevronRight } from 'lucide-react';
 
 const notices = [
-  '🎉 限时优惠：新人注册即送100元大礼包！',
-  '📦 全场满500减50，满1000减120，上不封顶！',
-  '🚚 今日下单，明日送达！偏远地区除外',
-  '🎊 春季大促：数码产品全场8折起！',
-  '💳 支持KBZ Pay、WavePay、Visa等多种支付',
-  '📱 手机端专属优惠：APP下单再减10元',
+  '📢 木姐市集：每日新鲜蔬果上市，限时特惠！',
+  '🏠 木姐房产：新增多套精品房源，拎包入住！',
+  '🔄 换汇服务：实时汇率，诚信经营，安全可靠！',
+  '🍜 美食推荐：木姐地道美食地图，网红店铺合集！',
+  '📋 签证服务：木姐-瑞丽往返签证，一站式办理！',
+  '🚗 汽车服务：木姐汽修保养，24小时道路救援！',
+  '📱 二手市场：木姐同城交易，诚信保障！',
 ];
 
 export default function MarqueeNotice() {
@@ -31,7 +32,7 @@ export default function MarqueeNotice() {
               <Volume2 className="w-4 h-4 text-white" />
             </div>
             <span className="text-xs text-orange-600 font-bold whitespace-nowrap tracking-wide">
-              公告
+              木姐公告
             </span>
           </div>
 

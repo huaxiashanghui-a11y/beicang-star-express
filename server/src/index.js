@@ -12,6 +12,13 @@ const couponRoutes = require('./routes/coupons');
 const notificationRoutes = require('./routes/notifications');
 const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
+const exchangeRoutes = require('./routes/exchange');
+const rechargeRoutes = require('./routes/recharge');
+const shoppingRoutes = require('./routes/shopping');
+const shippingRoutes = require('./routes/shipping');
+
+// 导入服务
+const { initExchangeRateService } = require('./services/exchangeRateService');
 
 // 创建Express应用
 const app = express();
@@ -41,6 +48,10 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/exchange', exchangeRoutes);
+app.use('/api/recharge', rechargeRoutes);
+app.use('/api/shopping', shoppingRoutes);
+app.use('/api/shipping', shippingRoutes);
 
 // 分类路由（直接使用products路由）
 app.get('/api/categories', (req, res) => {
@@ -171,6 +182,9 @@ app.use((req, res) => {
 
 // 启动服务器
 app.listen(PORT, () => {
+  // 初始化汇率服务
+  initExchangeRateService();
+
   console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║

@@ -11,7 +11,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className={`pb-16 sm:pb-20 ${isHomePage ? 'pt-[88px] sm:pt-[106px]' : 'pt-12 sm:pt-16'}`}>
+      <main className={`pb-16 sm:pb-20 ${isHomePage ? 'pt-[88px] sm:pt-[96px]' : 'pt-12 sm:pt-16'}`}>
         {/* 内容区域自适应 */}
         <div className="w-full px-3 sm:px-4 md:px-6 lg:max-w-4xl mx-auto">
           <PageTransition key={location.pathname}>

@@ -19,6 +19,10 @@ import AddressPage from '@/pages/AddressPage'
 import CouponPage from '@/pages/CouponPage'
 import ActivityPage from '@/pages/ActivityPage'
 import ErrandsPage from '@/pages/ErrandsPage'
+import ExchangePage from '@/pages/ExchangePage'
+import RechargePage from '@/pages/RechargePage'
+import ShoppingPage from '@/pages/ShoppingPage'
+import ShippingPage from '@/pages/ShippingPage'
 // Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
 import AdminLayout from '@/layouts/AdminLayout'
@@ -36,11 +40,6 @@ import AdminBannersPage from '@/pages/admin/AdminBannersPage'
 import AdminPointsPage from '@/pages/admin/AdminPointsPage'
 import AdminRidersPage from '@/pages/admin/AdminRidersPage'
 import AdminPermissionsPage from '@/pages/admin/AdminPermissionsPage'
-import AdminRechargePage from '@/pages/admin/AdminRechargePage'
-import AdminSystemMessagesPage from '@/pages/admin/AdminSystemMessagesPage'
-import AdminEmailListPage from '@/pages/admin/AdminEmailListPage'
-import AdminSecretaryPage from '@/pages/admin/AdminSecretaryPage'
-import AdminPopupPage from '@/pages/admin/AdminPopupPage'
 import './index.css'
 
 // Admin Route Guard
@@ -74,6 +73,10 @@ function App() {
               <Route path="activity" element={<ActivityPage />} />
               <Route path="errands" element={<ErrandsPage />} />
               <Route path="errands/:type" element={<ErrandsPage />} />
+              <Route path="exchange" element={<ExchangePage />} />
+              <Route path="recharge" element={<RechargePage />} />
+              <Route path="shopping" element={<ShoppingPage />} />
+              <Route path="shipping" element={<ShippingPage />} />
             </Route>
 
             {/* Admin Routes */}
@@ -95,11 +98,6 @@ function App() {
               <Route path="activities" element={<AdminActivitiesPage />} />
               <Route path="banners" element={<AdminBannersPage />} />
               <Route path="points" element={<AdminPointsPage />} />
-              <Route path="recharge" element={<AdminRechargePage />} />
-              <Route path="system-messages" element={<AdminSystemMessagesPage />} />
-              <Route path="email-list" element={<AdminEmailListPage />} />
-              <Route path="secretary" element={<AdminSecretaryPage />} />
-              <Route path="popup" element={<AdminPopupPage />} />
               <Route path="riders" element={<AdminRidersPage />} />
               <Route path="permissions" element={<AdminPermissionsPage />} />
             </Route>

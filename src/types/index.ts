@@ -93,6 +93,7 @@ export interface CartItem {
 export interface Order {
   id: string
   orderNumber: string
+  orderType?: OrderType
   items: OrderItem[]
   totalAmount: number
   originalAmount: number
@@ -118,6 +119,7 @@ export interface OrderItem {
 
 export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled' | 'refunding' | 'refunded'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type OrderType = 'mall' | 'errands' | 'exchange' | 'shopping' | 'secondhand'
 
 // Review types
 export interface Review {
